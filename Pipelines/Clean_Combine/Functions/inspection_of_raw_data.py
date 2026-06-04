@@ -13,7 +13,7 @@ import warnings
 ## _______________________ ##
 
 ## HELPER FUNCTIONS ##
-def setup_inspection_logger(output_dir_log: str) -> logging.Logger:
+def _setup_inspection_logger(output_dir_log: str) -> logging.Logger:
     """Set up and return a file logger for data inspection.
 
     Creates the log directory if it does not exist and configures
@@ -40,8 +40,27 @@ def setup_inspection_logger(output_dir_log: str) -> logging.Logger:
 
     return logger
 
-def extract_info(dataframe: pd.DataFrame, logger: logging.Logger) -> dict:
-    """Extract relevant information from dataframe 
+# Preview of data
+def _data_preview(dataframe: pd.DataFrame, logger: logging.Logger, number: int,):
+    """Log example values from each column."""
+
+    logger.info(
+        f"Preview of the data ({number} example values per column):"
+    )
+
+    for col in dataframe.columns:
+        examples = (
+            dataframe[col]
+            .dropna()
+            .unique()
+            .tolist()[:number]
+        )
+
+        logger.info(f"    {col}: {examples}")
+
+# Data types across columns
+def _extract_type_info(dataframe: pd.DataFrame, logger: logging.Logger) -> dict:
+    """Extract relevant information from a dataframe 
        and writes it to the log.
     """
     logger.info("The columns within the dataframe and their relevant dtypes are:")
@@ -73,64 +92,86 @@ def extract_info(dataframe: pd.DataFrame, logger: logging.Logger) -> dict:
     
     return column_type_info
 
-def summarise_info(summary_info: dict, logger: logging.Logger):
+def _summarise_type_info(type_summary: dict, logger: logging.Logger):
     """Summarise observed column types across all inspected datasets."""
-    logger.info("SUMMARY ACROSS ALL DATASETS")
-    logger.info("Observed types by column:")
+    logger.info("TYPE SUMMARY")
+    logger.info("Observed dtypes and Python types by column:")
 
-    for col, info in summary_info.items():
+    for col, info in type_summary.items():
         logger.info(f"    {col}:")
         logger.info(f"        Pandas dtypes: {sorted(info['dtypes'])}")
         logger.info(f"        Python types: {sorted(info['python_types'])}")
 
-def inspect_data(input_dir: str, output_dir_log: str):
-    logger = setup_inspection_logger(output_dir_log)
+    logger.info("")
 
-    summary_info = {}
+def _update_type_summary(type_summary: dict, column_type_info: dict):
+    """Update type summary with type information from one dataframe."""
+    for col, info in column_type_info.items():
+        if col not in type_summary:
+            type_summary[col] = {
+                "dtypes": set(),
+                "python_types": set(),
+            }
+
+        type_summary[col]["dtypes"].add(info["dtype"])
+        type_summary[col]["python_types"].update(info["python_types"])
+
+# Summary 
+def _summarise_info(summary_info: dict, logger: logging.Logger):
+    """Summarise all inspected information across datasets."""
+    logger.info("SUMMARY ACROSS ALL DATASETS")
+    logger.info("______________________________________________")
+    logger.info("")
     
-    for file in Path(input_dir).rglob('*.csv'):
+    logger.info(f"There's a total of {summary_info["total_row_count"]} messages across all datasets.")
+    logger.info(f"There's a total of {summary_info["total_conversations"]} conversations across all datasets.")
+
+    if "types" in summary_info:
+        _summarise_type_info(summary_info["types"], logger)
+## ________________ ##
+
+## MAIN FUNCTIONALITY ##
+def inspect_data(input_dir: str, output_dir_log: str):
+    """Inspect all CSV files in input_dir and write findings to the log."""
+    logger = _setup_inspection_logger(output_dir_log)
+
+
+    summary_info = {
+        "total_row_count": 0,
+        "total_conversations": 0,
+        "types": {},
+    }
+
+    for file in Path(input_dir).rglob("*.csv"):
         logger.info(f"{file.name} has been found.")
 
-        # Open dataset with warnings to catch potential data-inconsistencies
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter("always")
-            df = pd.read_csv(file, sep=";")
+            dataframe = pd.read_csv(file, sep=";")
+
         for warning in caught_warnings:
             logger.warning(f"WARNING: {warning.message}")
 
-        logger.info(f"The dataset was successfully opened.")
-        
-        column_type_info = extract_info(df, logger)
+        logger.info("The dataset was successfully opened.")
 
-        for col, info in column_type_info.items():
-            if col not in summary_info:
-                summary_info[col] = {
-                    "dtypes": set(),
-                    "python_types": set(),
-                }
+        # Number of rows / messages
+        row_count = dataframe.shape[0]
+        summary_info["total_row_count"] = summary_info["total_row_count"] + row_count
+        logger.info(f"This dataset contain {row_count} rows.")
 
-            summary_info[col]["dtypes"].add(info["dtype"])
-            summary_info[col]["python_types"].update(info["python_types"])
+        # Number of conversations
+        conversation_count = len(dataframe["conversation_code"].unique())
+        summary_info["total_conversations"] = summary_info["total_conversations"] + conversation_count
+        logger.info(f"This dataset contain {conversation_count} conversations.")
 
-        logger.info(f"The evaluation of this dataset has been finished!")
-        logger.info(f"______________________________________________")
+        _data_preview(dataframe, logger, 3)
+
+        column_type_info = _extract_type_info(dataframe, logger)
+        _update_type_summary(summary_info["types"], column_type_info)
+
+        logger.info("The evaluation of this dataset has been finished!")
+        logger.info("______________________________________________")
         logger.info("")
-    
-    summarise_info(summary_info, logger)
-## ________________ ##
 
-## MAIN FUNCTION ##
-def main(input_dir: str, output_dir_log: str):
-    # Setting up logger
-    logging.basicConfig(
-        filename=output_dir_log,
-        level=logging.INFO
-    )
-
-    inspect_data(input_dir, output_dir_log)
-
-## _____________ ##
-
-## CALL OF MAIN FUNCTION ##
-if __name__ == "__main__":
-    main()
+    _summarise_info(summary_info, logger)
+## __________________ ##

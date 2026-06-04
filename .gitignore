@@ -13,3 +13,6 @@ wheels/
 Data
 Output
 Pipelines/*/Data
+
+# Logs
+Pipelines/*/Logs
