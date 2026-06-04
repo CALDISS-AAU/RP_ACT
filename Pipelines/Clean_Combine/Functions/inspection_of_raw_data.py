@@ -1,16 +1,23 @@
+""" INTRODUCTION
+    Functionality : reads and evaluates .csv datasets for the ACT project
+    on the following parameters:
+        - Warning when opened?
+        - Number of rows and number of conversations
+        - Data preview
+        - Type determination
+        This is all written to a log.
+    Application : call the inspect_data function and provide the arguments:
+        - input_dir : folder-directory containing the .csv datasets
+        - output_dir_log : full path for the log including the name of the log file
+"""
+
 ## IMPORTS ##
 # External
 import logging
 from pathlib import Path
 import pandas as pd
 import warnings
-# Internal
 ## _______ ##
-
-## VARIABLES TO BE CHANGED ##
-
-
-## _______________________ ##
 
 ## HELPER FUNCTIONS ##
 def _setup_inspection_logger(output_dir_log: str) -> logging.Logger:
@@ -164,8 +171,10 @@ def inspect_data(input_dir: str, output_dir_log: str):
         summary_info["total_conversations"] = summary_info["total_conversations"] + conversation_count
         logger.info(f"This dataset contain {conversation_count} conversations.")
 
+        # Preview
         _data_preview(dataframe, logger, 3)
 
+        # Types
         column_type_info = _extract_type_info(dataframe, logger)
         _update_type_summary(summary_info["types"], column_type_info)
 
@@ -173,5 +182,6 @@ def inspect_data(input_dir: str, output_dir_log: str):
         logger.info("______________________________________________")
         logger.info("")
 
+    # Summary
     _summarise_info(summary_info, logger)
 ## __________________ ##
