@@ -138,7 +138,7 @@ def _summarise_info(summary_info: dict, logger: logging.Logger):
 ## ________________ ##
 
 ## MAIN FUNCTIONALITY ##
-def inspect_data(input_dir: str, output_dir_log: str):
+def inspect_raw_data(input_dir: str, output_dir_log: str):
     """Inspect all CSV files in input_dir and write findings to the log."""
     logger = _setup_inspection_logger(output_dir_log)
 
@@ -184,4 +184,22 @@ def inspect_data(input_dir: str, output_dir_log: str):
 
     # Summary
     _summarise_info(summary_info, logger)
+
+def inspect_cleaned_data(dataframe: pd.DataFrame, logger: logging.Logger):
+    logger.info("INSPECTION OF CLEANED DATA")
+    logger.info("______________________________________________")
+
+    row_count = dataframe.shape[0]
+    logger.info(f"This dataset contains {row_count} rows.")
+
+    conversation_count = dataframe["conversation_code"].nunique()
+    logger.info(f"This dataset contains {conversation_count} conversations.")
+
+    _data_preview(dataframe, logger, 3)
+
+    _extract_type_info(dataframe, logger)
+
+    logger.info("The evaluation of the cleaned dataset has been finished!")
+    logger.info("______________________________________________")
+    logger.info("")
 ## __________________ ##
