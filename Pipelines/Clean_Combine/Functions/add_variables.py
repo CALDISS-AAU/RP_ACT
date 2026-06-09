@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 import polars as pl
 import pyarrow
+import json
 # Internal
 ## _______ ##
 
@@ -135,8 +136,64 @@ def _add_season(
     logger.info("Season has been added")
     return dataframe
 
-def _add_contact_reason(dataframe: pl.DataFrame, logger: logging.Logger):
+def _open_and_combine_contact_reasons(input_dir: str, logger):
+    dfs = []
+    for file in Path(input_dir).rglob("*.csv"):
+        dfs.append(pl.read_csv(file, separator=";"))
+    
+    df_combined = pl.concat(dfs)
+    return df_combined
+
+def _merge_topic_row(row: dict) -> list[str]:
+    topics = []
+
+    for cell in row.values():
+        if cell is None:
+            continue
+
+        cell_topics = json.loads(cell)
+
+        for topic in cell_topics:
+            topics.append(topic)
+
+    return topics
+
+def _merge_topics(dataframe: pl.DataFrame, logger: logging.Logger):
+    """Merges all topics into a single list"""
+    topic_cols = []
+    for col in dataframe.columns:
+        if "topic_" in col:
+            topic_cols.append(col)
+
+    dataframe = dataframe.with_columns(
+        pl.struct(topic_cols)
+        .map_elements(
+            _merge_topic_row,
+            return_dtype=pl.List(pl.String),
+        )
+        .alias("contact_reasons")
+    )
+    
+    logger.info(f"All topics from the following columns have been merged:")
+    logger.info(f"{topic_cols}")
+
+    return dataframe
+
+def _add_contact_reason(dataframe_data: pl.DataFrame, dataframe_contact_reason: pl.DataFrame, logger: logging.Logger):
     """Adds column with contact reason from extern dataset"""
+    dataframe_contact_reason = _merge_topics(dataframe_contact_reason, logger)
+
+    dataframe_data = dataframe_data.join(
+        dataframe_contact_reason.select([
+            "conversation_code", 
+            "contact_reasons"
+        ]),
+        on="conversation_code",
+        how="left"
+    )
+
+    return dataframe_data
+    
 
 def _give_summary(dataframe: pl.DataFrame, logger: logging.Logger):
     logger.info(f"Shape: {dataframe.shape}")
@@ -162,8 +219,15 @@ def add_variables(
     logger = _setup_cleaning_logger(output_dir_log)
 
     df = pl.read_parquet(input_dir_data)
+    df_contact_reason = _open_and_combine_contact_reasons(input_dir_contact_reason, logger)
+
     logger.info("A summary of the initial data")
     _give_summary(df, logger)
+    logger.info("_____________________________________________________")
+    logger.info("")
+
+    logger.info("A summary of the contact_reason data")
+    _give_summary(df_contact_reason, logger)
     logger.info("_____________________________________________________")
     logger.info("")
 
@@ -174,8 +238,14 @@ def add_variables(
     logger.info("_____________________________________________________")
     logger.info("")
 
+    df = _add_contact_reason(df, df_contact_reason, logger)
+    logger.info("_____________________________________________________")
+    logger.info("")
+
     logger.info("A summary of the final data")
     _give_summary(df, logger)
     logger.info("_____________________________________________________")
     logger.info("")
+
+    df.write_parquet(output_dir_data)
 ## __________________ ##
