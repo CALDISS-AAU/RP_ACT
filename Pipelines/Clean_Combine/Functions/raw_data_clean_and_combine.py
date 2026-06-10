@@ -90,6 +90,9 @@ def _clean_data(dataframe: pd.DataFrame, logger):
     dataframe_step3 = _remove_ages_out_of_range(dataframe_step2, logger)
     dataframe_step3["is_incoming"] = dataframe_step3["is_incoming"].astype(bool)
     logger.info("'is_incoming' is now a bool")
+    dataframe_step3["last_contact"] = pd.to_datetime(dataframe_step3["last_contact"], utc=True)
+    dataframe_step3["msg_created_on"] = pd.to_datetime(dataframe_step3["msg_created_on"], utc=True)
+    logger.info("'last_contact' and 'msg_created_on' are now datetimes")
 
     clean_dataframe = dataframe_step3
     return clean_dataframe
