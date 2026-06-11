@@ -9,33 +9,6 @@ import json
 ## _______ ##
 
 ## HELPER FUNCTIONS ##
-def _setup_cleaning_logger(output_dir_log: str) -> logging.Logger:
-    """Set up and return a file logger for data inspection.
-
-    Creates the log directory if it does not exist and configures
-    a logger that writes to output_dir_log.
-
-    Args:
-        output_dir_log: Full directory where the log file is stored.
-
-    Returns:
-        Configured logger instance.
-    """
-    log_file = Path(output_dir_log)
-
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-
-    logger = logging.getLogger("inspection_of_raw_data")
-    logger.setLevel(logging.INFO)
-
-    if not logger.handlers:
-        file_handler = logging.FileHandler(log_file, mode="w")
-        formatter = logging.Formatter("%(message)s")
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-    return logger
-
 def _dict_to_mapping(dict):
     mapping = {
         key: values
@@ -207,16 +180,15 @@ def _give_summary(dataframe: pl.DataFrame, logger: logging.Logger):
 
 ## MAIN FUNCTIONALITY ##
 def add_variables(
-    input_dir_data: str, 
+    input_dir_data: str,
     input_dir_contact_reason: str,
-    output_dir_data: str, 
-    output_dir_log: str,
+    output_dir_data: str,
+    logger: logging.Logger,
     age_range_dict: dict,
     time_of_day_dict: dict,
     season_dict: dict,
-):
+) -> None:
     """Adds relevant variables to the dataset."""
-    logger = _setup_cleaning_logger(output_dir_log)
 
     df = pl.read_parquet(input_dir_data)
     df_contact_reason = _open_and_combine_contact_reasons(input_dir_contact_reason, logger)

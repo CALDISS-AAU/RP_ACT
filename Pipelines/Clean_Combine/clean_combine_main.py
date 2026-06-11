@@ -4,6 +4,7 @@
 """
 ## IMPORTS ##
 # Internal
+from Shared_Functions.logger_functionality import *
 from .Functions.data_inspection import inspect_raw_data 
 from .Functions.raw_data_clean_and_combine import clean_and_combine_data
 from .Functions.add_variables import add_variables
@@ -17,6 +18,7 @@ INPUT_DIR_CONTACT_REASONS = "/work/ACT/Data/raw/emner" # "./Data/raw/emner"
 OUTPUT_DIR_COMBINED_DATA = "Pipelines/Clean_Combine/Data/cleaned_data.parquet"
 OUTPUT_DIR_FINAL_DATA = "./Data/clean_combined_data.parquet"
 
+OUTPUT_DIR_LOG_FULL_PIPELINE = "./Pipelines/Clean_Combine/Logs/full_clean_combine_pipeline.log"
 OUTPUT_DIR_LOG_INSPECTION = "./Pipelines/Clean_Combine/Logs/inspection_of_raw_data.log"
 OUTPUT_DIR_LOG_CLEAN_AND_COMBINE = "./Pipelines/Clean_Combine/Logs/clean_and_combine_raw_data.log"
 OUTPUT_DIR_LOG_CLEAN_AND_COMBINE_EVALUATION = "./Pipelines/Clean_Combine/Logs/clean_and_combine_raw_data_evaluation.log"
@@ -50,16 +52,47 @@ season = {
 
 ## MAIN FUNCTION ##
 def main():
-    # inspect_raw_data(INPUT_DIR_CONVERSATIONS, OUTPUT_DIR_LOG_INSPECTION)
-    # clean_and_combine_data(INPUT_DIR_CONVERSATIONS, OUTPUT_DIR_COMBINED_DATA, OUTPUT_DIR_LOG_INSPECTION)
+    inspect_raw_data(
+        input_dir=INPUT_DIR_CONVERSATIONS,
+        logger=setup_logger(
+            output_dir_log=OUTPUT_DIR_LOG_INSPECTION,
+            logger_name="clean_combine.inspection",
+        ),
+    )
+
+    clean_and_combine_data(
+        input_dir=INPUT_DIR_CONVERSATIONS,
+        output_dir_combined_data=OUTPUT_DIR_COMBINED_DATA,
+        cleaning_logger=setup_logger(
+            OUTPUT_DIR_LOG_CLEAN_AND_COMBINE,
+            "clean_combine.cleaning",
+        ),
+        evaluation_logger=setup_logger(
+            OUTPUT_DIR_LOG_CLEAN_AND_COMBINE_EVALUATION,
+            "clean_combine.evaluation",
+        ),
+    )
+
     add_variables(
-        input_dir_data=OUTPUT_DIR_COMBINED_DATA, 
-        input_dir_contact_reason=INPUT_DIR_CONTACT_REASONS, 
-        output_dir_data=OUTPUT_DIR_FINAL_DATA, 
-        output_dir_log=OUTPUT_DIR_LOG_VARIABLE_ADDITION,
+        input_dir_data=OUTPUT_DIR_COMBINED_DATA,
+        input_dir_contact_reason=INPUT_DIR_CONTACT_REASONS,
+        output_dir_data=OUTPUT_DIR_FINAL_DATA,
+        logger=setup_logger(
+            output_dir_log=OUTPUT_DIR_LOG_VARIABLE_ADDITION,
+            logger_name="clean_combine.add_variables",
+        ),
         age_range_dict=age_ranges,
         time_of_day_dict=time_of_day,
-        season_dict=season
+        season_dict=season,
+    )
+
+    rebuild_pipeline_log(
+        step_log_paths=[
+            OUTPUT_DIR_LOG_INSPECTION,
+            OUTPUT_DIR_LOG_CLEAN_AND_COMBINE,
+            OUTPUT_DIR_LOG_VARIABLE_ADDITION,
+        ],
+        output_dir_log=OUTPUT_DIR_LOG_FULL_PIPELINE,
     )
 
 ## _____________ ##
