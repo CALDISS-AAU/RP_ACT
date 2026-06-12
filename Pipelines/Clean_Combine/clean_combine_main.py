@@ -1,6 +1,11 @@
-""" Main script for the Clean_Combine pipeline.
-    Run this script by going to the ACT folder and then run:
-        python -m Pipelines.Clean_Combine.clean_combine_main
+"""Run the ACT clean-and-combine pipeline. 
+   The script inspects raw conversation data, 
+       cleans and combines the raw CSV files, 
+       adds derived variables, exports the final dataset, 
+       and rebuilds the full pipeline log. 
+
+   Run from the ACT folder with: 
+       python -m Pipelines.Clean_Combine.clean_combine_main 
 """
 ## IMPORTS ##
 # Internal
@@ -25,13 +30,13 @@ OUTPUT_DIR_LOG_CLEAN_AND_COMBINE_EVALUATION = "./Pipelines/Clean_Combine/Logs/cl
 OUTPUT_DIR_LOG_VARIABLE_ADDITION = "./Pipelines/Clean_Combine/Logs/variable_addition.log"
 
 # Groupings
-age_ranges = {
+AGE_RANGES = {
     "pre teen": [10, 11, 12],
     "early teen": [13, 14],
     "teen": [15, 16, 17]
 }
 
-time_of_day = {
+TIME_OF_DAY = {
     "night": range(0, 6),
     "morning": range(6, 12),
     "midday": range(12, 13),
@@ -39,7 +44,7 @@ time_of_day = {
     "evening": range(18, 24)
 }
 
-season = {
+SEASON = {
     "winter": [12, 1, 2],
     "spring": [3, 4, 5],
     "summer": [6, 7, 8],
@@ -51,7 +56,8 @@ season = {
 ## ________________ ##
 
 ## MAIN FUNCTION ##
-def main():
+def main() -> None: 
+    """Run all clean-and-combine pipeline steps."""
     inspect_raw_data(
         input_dir=INPUT_DIR_CONVERSATIONS,
         logger=setup_logger(
@@ -81,9 +87,9 @@ def main():
             output_dir_log=OUTPUT_DIR_LOG_VARIABLE_ADDITION,
             logger_name="clean_combine.add_variables",
         ),
-        age_range_dict=age_ranges,
-        time_of_day_dict=time_of_day,
-        season_dict=season,
+        age_range_dict=AGE_RANGES,
+        time_of_day_dict=TIME_OF_DAY,
+        season_dict=SEASON,
     )
 
     rebuild_pipeline_log(

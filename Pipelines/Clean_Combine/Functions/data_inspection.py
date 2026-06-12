@@ -1,14 +1,8 @@
 """ INTRODUCTION
-    Functionality : reads and evaluates .csv datasets for the ACT project
-    on the following parameters:
-        - Warning when opened?
-        - Number of rows and number of conversations
-        - Data preview
-        - Type determination
-        This is all written to a log.
-    Application : call the inspect_data function and provide the arguments:
-        - input_dir : folder-directory containing the .csv datasets
-        - output_dir_log : full path for the log including the name of the log file
+    Inspect ACT project CSV datasets and log basic quality information. 
+    The module supports inspection of raw CSV files and cleaned dataframes. 
+    It logs row counts, conversation counts, column previews, pandas dtypes, 
+        observed Python types, and summary information across datasets. 
 """
 
 ## IMPORTS ##
@@ -21,8 +15,8 @@ import warnings
 
 ## HELPER FUNCTIONS ##
 # Preview of data
-def _data_preview(dataframe: pd.DataFrame, logger: logging.Logger, number: int,):
-    """Log example values from each column."""
+def _data_preview(dataframe: pd.DataFrame, logger: logging.Logger, number: int,) -> None:
+    """Log example values from each dataframe column."""
 
     logger.info(
         f"Preview of the data ({number} example values per column):"
@@ -40,9 +34,7 @@ def _data_preview(dataframe: pd.DataFrame, logger: logging.Logger, number: int,)
 
 # Data types across columns
 def _extract_type_info(dataframe: pd.DataFrame, logger: logging.Logger) -> dict:
-    """Extract relevant information from a dataframe 
-       and writes it to the log.
-    """
+    """Log dtype information and return observed column type metadata."""
     logger.info("The columns within the dataframe and their relevant dtypes are:")
 
     column_type_info = {}
@@ -72,8 +64,8 @@ def _extract_type_info(dataframe: pd.DataFrame, logger: logging.Logger) -> dict:
     
     return column_type_info
 
-def _summarise_type_info(type_summary: dict, logger: logging.Logger):
-    """Summarise observed column types across all inspected datasets."""
+def _summarise_type_info(type_summary: dict, logger: logging.Logger) -> None:
+    """Log observed dtypes and Python types across inspected datasets."""
     logger.info("TYPE SUMMARY")
     logger.info("Observed dtypes and Python types by column:")
 
@@ -84,8 +76,8 @@ def _summarise_type_info(type_summary: dict, logger: logging.Logger):
 
     logger.info("")
 
-def _update_type_summary(type_summary: dict, column_type_info: dict):
-    """Update type summary with type information from one dataframe."""
+def _update_type_summary(type_summary: dict, column_type_info: dict) -> None: 
+    """Add one dataframe's column type metadata to the overall summary."""
     for col, info in column_type_info.items():
         if col not in type_summary:
             type_summary[col] = {
@@ -97,14 +89,14 @@ def _update_type_summary(type_summary: dict, column_type_info: dict):
         type_summary[col]["python_types"].update(info["python_types"])
 
 # Summary 
-def _summarise_info(summary_info: dict, logger: logging.Logger):
-    """Summarise all inspected information across datasets."""
+def _summarise_info(summary_info: dict, logger: logging.Logger) -> None: 
+    """Log summary statistics across all inspected datasets."""
     logger.info("SUMMARY ACROSS ALL DATASETS")
     logger.info("______________________________________________")
     logger.info("")
     
-    logger.info(f"There's a total of {summary_info["total_row_count"]} messages across all datasets.")
-    logger.info(f"There's a total of {summary_info["total_conversations"]} conversations across all datasets.")
+    logger.info(f"There's a total of {summary_info['total_row_count']} messages across all datasets.")
+    logger.info(f"There's a total of {summary_info['total_conversations']} conversations across all datasets.")
 
     if "types" in summary_info:
         _summarise_type_info(summary_info["types"], logger)
@@ -112,9 +104,17 @@ def _summarise_info(summary_info: dict, logger: logging.Logger):
 
 ## MAIN FUNCTIONALITY ##
 def inspect_raw_data(input_dir: str, logger: logging.Logger) -> None:
-    """Inspect all CSV files in input_dir and write findings to the log."""
-
-
+    """Inspect all CSV files in a directory and log dataset-level findings. 
+       Recursively searches ``input_dir`` for CSV files, opens each file 
+           using a semicolon separator, and logs warnings raised during import. 
+       For each dataset, the function logs row counts, conversation counts, 
+           example values, column dtypes, and observed Python types. 
+       It finishes by logging a combined summary across all inspected datasets. 
+       
+       Args: 
+           input_dir: Directory containing raw CSV files. 
+           logger: Logger used to write inspection results. 
+    """
     summary_info = {
         "total_row_count": 0,
         "total_conversations": 0,
@@ -157,7 +157,8 @@ def inspect_raw_data(input_dir: str, logger: logging.Logger) -> None:
     # Summary
     _summarise_info(summary_info, logger)
 
-def inspect_cleaned_data(dataframe: pd.DataFrame, logger: logging.Logger):
+def inspect_cleaned_data(dataframe: pd.DataFrame, logger: logging.Logger)-> None: 
+    """Inspect a cleaned dataframe and log basic dataset information."""
     logger.info("INSPECTION OF CLEANED DATA")
     logger.info("______________________________________________")
 
