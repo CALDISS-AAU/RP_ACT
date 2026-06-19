@@ -45,7 +45,7 @@ def build_sentence_transformer(
     )
 
 def create_strata_col(df: pl.DataFrame) -> pl.DataFrame:
-    df = df.with_columns(
+    return df.with_columns(
     (
         pl.col("requester_gender_name")
          + "_" + 
@@ -70,9 +70,9 @@ def split_data(
         temp_df,
         test_size= test_size / (val_size + test_size),
         random_state=1349,
-        stratify=df['strata'],
+        stratify=temp_df['strata'],
     )
-    return train_df, test_df, val_df
+    return train_df, val_df, test_df
 
 def train_tsdae(model, train_df,val_df, output_dir,logging_dir, epochs=5, batch_size=32, lr=2e-5, warmup_ratio=0.1, max_grad_norm=1.0):
     loss = DenoisingAutoEncoderLoss(model, tie_encoder_decoder=True)
