@@ -53,16 +53,28 @@ def create_strata_col(df: pl.DataFrame) -> pl.DataFrame:
          ).alias("strata"),
 )
 
-def split_data(df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
-    return train_test_split(
+def split_data(
+        df: pl.DataFrame,
+        train_size: float = 0.7,
+        val_size: float = 0.15,
+        test_size: float = 0.15,
+    ) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
+
+    train_df, temp_df = train_test_split(
         df,
-        test_size=0.2,
+        test_size= (val_size + test_size),
+        stratify=df['strata'],
         random_state=1849,
-        stratify=df['strata']
     )
+    test_df, val_df = train_test_split(
+        temp_df,
+        test_size= test_size / (val_size + test_size),
+        random_state=1349,
+        stratify=df['strata'],
+    )
+    return train_df, test_df, val_df
 
-
-def train_tsdae(model, dataset, output_dir,logging_dir, epochs=5, batch_size=32, lr=2e-5, warmup_ratio=0.1, max_grad_norm=1.0):
+def train_tsdae(model, train_df,val_df, output_dir,logging_dir, epochs=5, batch_size=32, lr=2e-5, warmup_ratio=0.1, max_grad_norm=1.0):
     loss = DenoisingAutoEncoderLoss(model, tie_encoder_decoder=True)
 
     args = SentenceTransformerTrainingArguments(
@@ -88,7 +100,8 @@ def train_tsdae(model, dataset, output_dir,logging_dir, epochs=5, batch_size=32,
     trainer = SentenceTransformerTrainer(
         model=model,
         args=args,
-        train_dataset=dataset,
+        train_dataset=train_df,
+        eval_dataset=val_df,
         loss=loss,
     )
 
