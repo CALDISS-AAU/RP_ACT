@@ -32,6 +32,23 @@ def _data_preview(dataframe: pd.DataFrame, logger: logging.Logger, number: int,)
 
         logger.info(f"    {col}: {examples}")
 
+def _extract_unique_values(
+    dataframe: pd.DataFrame,
+    logger: logging.Logger,
+    column_name: str,
+) -> set:
+    """Log and return unique non-null values from one column."""
+
+    if column_name not in dataframe.columns:
+        logger.warning(f"Column '{column_name}' was not found in this dataset.")
+        return set()
+
+    unique_values = set(dataframe[column_name].dropna().unique().tolist())
+
+    logger.info(f"Unique values in '{column_name}': {sorted(unique_values)}")
+
+    return unique_values
+
 # Data types across columns
 def _extract_type_info(dataframe: pd.DataFrame, logger: logging.Logger) -> dict:
     """Log dtype information and return observed column type metadata."""
@@ -100,6 +117,12 @@ def _summarise_info(summary_info: dict, logger: logging.Logger) -> None:
 
     if "types" in summary_info:
         _summarise_type_info(summary_info["types"], logger)
+
+    if "requester_gender_name_values" in summary_info:
+        logger.info(
+            "Unique requester_gender_name values across all datasets: "
+            f"{sorted(summary_info['requester_gender_name_values'])}"
+        )
 ## ________________ ##
 
 ## MAIN FUNCTIONALITY ##
@@ -119,6 +142,7 @@ def inspect_raw_data(input_dir: str, logger: logging.Logger) -> None:
         "total_row_count": 0,
         "total_conversations": 0,
         "types": {},
+        "requester_gender_name_values": set(),
     }
 
     for file in Path(input_dir).rglob("*.csv"):
@@ -154,6 +178,15 @@ def inspect_raw_data(input_dir: str, logger: logging.Logger) -> None:
         logger.info("______________________________________________")
         logger.info("")
 
+        # Gender
+        gender_values = _extract_unique_values(
+            dataframe,
+            logger,
+            "requester_gender_name",
+        )
+
+        summary_info["requester_gender_name_values"].update(gender_values)
+
     # Summary
     _summarise_info(summary_info, logger)
 
@@ -171,6 +204,8 @@ def inspect_cleaned_data(dataframe: pd.DataFrame, logger: logging.Logger)-> None
     _data_preview(dataframe, logger, 3)
 
     _extract_type_info(dataframe, logger)
+
+    _extract_unique_values(dataframe, logger, "requester_gender_name")
 
     logger.info("The evaluation of the cleaned dataset has been finished!")
     logger.info("______________________________________________")

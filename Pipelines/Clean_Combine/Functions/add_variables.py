@@ -43,6 +43,20 @@ def _add_age_ranges(
     logger.info("Age group has been added.")
     return dataframe
 
+def _add_gender(dataframe: pl.DataFrame, logger: logging.Logger) -> pl.DataFrame:
+    """Add simplified gender column from requester_gender_name."""
+
+    dataframe = dataframe.with_columns(
+        pl.when(pl.col("requester_gender_name").is_null()).then(None)
+        .when(pl.col("requester_gender_name").is_in(["Dreng", "Ung mand"])).then(pl.lit("male"))
+        .when(pl.col("requester_gender_name").is_in(["Pige", "Ung kvinde"])).then(pl.lit("female"))
+        .otherwise(pl.lit("Other"))
+        .alias("gender")
+    )
+
+    logger.info("Gender has been added based on requester_gender_name.")
+    return dataframe
+
 def _add_text_features(
     dataframe: pl.DataFrame,
     col: str,
@@ -234,6 +248,7 @@ def add_variables(
     logger.info("")
 
     df = _add_age_ranges(df, "requester_age_name", age_range_dict, logger)
+    df = _add_gender(df, logger)
     df = _add_time_of_day(df, "msg_created_on", time_of_day_dict, logger)
     df = _add_season(df, "msg_created_on", season_dict, logger)
     df = _add_text_features(df, "msg_tekst", logger)
