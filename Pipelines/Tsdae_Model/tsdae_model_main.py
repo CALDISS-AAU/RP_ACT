@@ -1,13 +1,14 @@
 """Main script for the Tsdae_Model pipeline."""
 # Internal imports 
-from Messagelvel_Model import create_strata_col, split_data, build_sentence_transformer, train_tsdae, INPUT_DIR_DATA
+from Functions.train_func import *
+
+# Directories
+INPUT_DIR_DATA = "/work/RP_act/ACT/Data/clean_combine/message_data.parquet"
+OUTPUT_DIR_LOG_TRAIN = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/Logs/trainer.log"
+OUTPUT_DIR_MODEL = '/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/ACT_messagelvl_embed'
 
 def main():
-    model = build_sentence_transformer(model_name)
-    dataset = read_parquet(INPUT_DIR_DATA)
-    dataset = create_strata_col(dataset)
-    train_df, val_df, test_df = split_data(dataset)
-    model = train_tsdae(model, train_df, val_df)
+    train_message_model(input_dir=INPUT_DIR_DATA, output_dir=OUTPUT_DIR_MODEL, log=OUTPUT_DIR_LOG_TRAIN)
 
 
 if __name__ == "__main__":
