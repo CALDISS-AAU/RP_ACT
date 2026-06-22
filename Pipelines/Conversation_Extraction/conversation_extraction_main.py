@@ -39,14 +39,17 @@ OUTPUT_DIR_LOG_DATA_INVESTIGATION = "./Pipelines/Conversation_Extraction/Logs/da
 def main() -> None: 
     """Run all conversation-extraction pipeline steps."""
     investigate_data_stats(
-        INPUT_DIR_CONVERSATIONS, 
-        OUTPUT_DIR_FINAL_DATA_INVESTIGATION, 
-        logger=setup_logger(
-            output_dir_log=OUTPUT_DIR_LOG_DATA_INVESTIGATION,
-            logger_name="conversation_extraction.data_inspection",
-        ),
-        bottom_percent=25.0,
-    )
+    INPUT_DIR_CONVERSATIONS,
+    OUTPUT_DIR_FINAL_DATA_INVESTIGATION,
+    output_dir_pngs=OUTPUT_DIR_DATA_INVESTIGATION_PNGS,
+    logger=setup_logger(
+        output_dir_log=OUTPUT_DIR_LOG_DATA_INVESTIGATION,
+        logger_name="conversation_extraction.data_inspection",
+    ),
+    bottom_percent=25.0,
+    wordcount_interval_size=200,
+    wordcount_stop_at=2000,
+)
 
 ## _____________ ##
 
