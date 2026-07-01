@@ -10,9 +10,12 @@ wheels/
 .venv
 
 # Data directories
-Data
-Output
-Pipelines/*/Data
+Data/*
+Output/*
+Pipelines/*/Data/*
 
 # Logs
-Pipelines/*/Logs
+Pipelines/*/Logs/*
+
+# Keep .gitkeep
+!.gitkeep
