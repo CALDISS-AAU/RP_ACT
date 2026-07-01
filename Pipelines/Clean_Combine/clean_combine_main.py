@@ -22,7 +22,7 @@ OUTPUT_DIR_LOG_CLEAN_AND_COMBINE_EVALUATION = "./Pipelines/Clean_Combine/Logs/cl
 age_ranges = {
     "pre teen": [10, 11, 12],
     "early teen": [13, 14],
-    "teen": [15, 16. 17]
+    "teen": [15, 16, 17]
 }
 
 time_of_day = {
@@ -46,8 +46,8 @@ season = {
 
 ## MAIN FUNCTION ##
 def main():
-    # inspect_raw_data(INPUT_DIR_CONVERSATIONS, OUTPUT_DIR_LOG_INSPECTION)
-    # clean_and_combine_data(INPUT_DIR_CONVERSATIONS, OUTPUT_DIR_COMBINED_DATA, OUTPUT_DIR_LOG_CLEAN_AND_COMBINE)
+    inspect_raw_data(INPUT_DIR_CONVERSATIONS, OUTPUT_DIR_LOG_INSPECTION)
+    clean_and_combine_data(INPUT_DIR_CONVERSATIONS, OUTPUT_DIR_COMBINED_DATA, OUTPUT_DIR_LOG_CLEAN_AND_COMBINE)
 
 
 ## _____________ ##

@@ -7,6 +7,7 @@ This script trains a TSDAE model on RP_ACT data on the message level.
 import sys
 import polars as pl
 import numpy as np
+from datasets import Dataset
 from sentence_transformers import models,SentenceTransformer
 from sentence_transformers.losses import DenoisingAutoEncoderLoss
 from sentence_transformers.datasets import DenoisingAutoEncoderDataset
@@ -72,9 +73,15 @@ def _split_data(
 
 def _create_hf_dataset(
     df: pl.DataFrame,
-    text_column: str = 'message_tekst'
+    text_column: str = 'msg_tekst'
 ) -> Dataset: 
-    return Dataset.from_dict({'text': df[text_column].to_list()})
+
+    texts = df[text_column].to_list()
+    
+    return Dataset.from_dict({
+        "source": texts,
+        "target": texts,
+    })
 
 def _train_tsdae(
     model,
@@ -87,7 +94,9 @@ def _train_tsdae(
     lr=2e-5,
     warmup_ratio=0.1,
     max_grad_norm=1.0):
-    loss = DenoisingAutoEncoderLoss(model, tie_encoder_decoder=True)
+    loss = DenoisingAutoEncoderLoss(
+        model,
+        tie_encoder_decoder=True)
 
     args = SentenceTransformerTrainingArguments(
         output_dir=output_dir,
