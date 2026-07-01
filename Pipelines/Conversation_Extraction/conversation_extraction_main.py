@@ -26,9 +26,10 @@ INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/clean_combine/conversation_data.parque
 OUTPUT_DIR_DATA_INVESTIGATION_PNGS = "Pipelines/Conversation_Extraction/Data/pngs" 
 
 # Directories - global output
-OUTPUT_DIR_FINAL_DATA_INVESTIGATION = "/work/RP_ACT/Output/Conversation_Extraction/data_investiogation_stats.docx"
-OUTPUT_DIR_CONVERSATION_EXAMPLES = "/work/RP_ACT/Output/Conversation_Extraction/Conversation_Examples"
-OUTPUT_DIR_STRATIFIED_CONVERSATIONS = "/work/RP_ACT/Output/Conversation_Extraction/Stratified_Conversations"
+OUTPUT_DIR_BASE = "/work/ACT/Output/Conversation_Extraction"
+OUTPUT_DIR_FINAL_DATA_INVESTIGATION = f"{OUTPUT_DIR_BASE}/data_investiogation_stats.docx" #"/work/RP_ACT/Output/Conversation_Extraction/data_investiogation_stats.docx"
+OUTPUT_DIR_CONVERSATION_EXAMPLES = f"{OUTPUT_DIR_BASE}/Conversation_Examples" #"/work/RP_ACT/Output/Conversation_Extraction/Conversation_Examples"
+OUTPUT_DIR_STRATIFIED_CONVERSATIONS = f"{OUTPUT_DIR_BASE}/Stratified_Conversations" #"/work/RP_ACT/Output/Conversation_Extraction/Stratified_Conversations"
 
 # Directories - logs
 OUTPUT_DIR_LOG_FULL_PIPELINE = "./Pipelines/Conversation_Extraction/Logs/full_conversation_extraction_pipeline.log"
