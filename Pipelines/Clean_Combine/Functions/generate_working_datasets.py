@@ -1,13 +1,17 @@
-"""ADD DESCRIPTION!!
+"""Generate additional working datasets from cleaned ACT message data.
+   The module creates alternative representations of the cleaned message
+       dataset for downstream analyses. It generates a dataset with
+       consecutive messages collapsed by sender and a conversation-level
+       dataset where all messages are combined into a single row.
 """
 
 ## IMPORTS ##
-# External
+# Standard
 import logging
-from pathlib import Path
+
+# External
 import polars as pl
 import pyarrow
-# Internal
 ## _______ ##
 
 ## HELPER FUNCTIONS ##
@@ -57,7 +61,7 @@ def _collapse_messages(
     logger: logging.Logger,
     separator: str,
 ) -> pl.DataFrame:
-    """Collapse consecutive incoming or outgoing messages."""
+    """Combine consecutive messages from the same sender into a single message."""
 
     dataframe = dataframe.sort(["conversation_code", "msg_nummer"])
 
@@ -140,13 +144,28 @@ def _combine_conversations(
 ## MAIN FUNCTIONALITY ##
 def generate_working_datasets(
     input_dir_data: str,
-    output_dir_message_data: str,
     output_dir_collapsed_messages_data: str,
     output_dir_conversation_data: str,
     logger: logging.Logger,
     separator: str,
 ) -> None:
-    """
+    """Generate additional working datasets from cleaned message data.
+       Reads the cleaned message-level dataset and creates two additional
+           datasets for downstream analyses. One dataset collapses
+           consecutive messages from the same sender, while the other
+           combines all messages within each conversation into a single row.
+           A randomly selected conversation is logged before and after each
+           transformation for validation, and the generated datasets are
+           exported as parquet files.
+
+       Args:
+           input_dir_data: Path to the cleaned message-level parquet dataset.
+           output_dir_collapsed_messages_data: Output path for the dataset
+               with consecutive messages collapsed.
+           output_dir_conversation_data: Output path for the conversation-level
+               dataset.
+           logger: Logger used to write processing information.
+           separator: String used when combining message texts.
     """
     df = pl.read_parquet(input_dir_data)
     random_conversation = _find_random_conversation_code(df, logger, 20)

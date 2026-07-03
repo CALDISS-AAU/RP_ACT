@@ -1,12 +1,14 @@
-"""Run the ACT clean-and-combine pipeline. 
-   The script inspects raw conversation data, 
-       cleans and combines the raw CSV files, 
-       adds derived variables, exports the final dataset, 
-       and rebuilds the full pipeline log. 
+"""Run the ACT clean-and-combine pipeline.
+   The script inspects raw conversation data,
+       cleans and combines the raw CSV files,
+       generates working datasets,
+       adds derived variables, exports the final datasets,
+       and rebuilds the full pipeline log.
 
-   Run from the ACT folder with: 
-       python -m Pipelines.Clean_Combine.clean_combine_main 
+   Run from the ACT folder with:
+       python -m Pipelines.Clean_Combine.clean_combine_main
 """
+
 ## IMPORTS ##
 # Internal
 from Shared_Functions.logger_functionality import *
@@ -70,7 +72,11 @@ MESSAGE_SEPARATOR = "[SEP]"
 
 ## MAIN FUNCTION ##
 def main() -> None: 
-    """Run all clean-and-combine pipeline steps."""
+    """Run the full ACT clean-and-combine pipeline.
+       Executes raw data inspection, cleaning and combination,
+           working-dataset generation, variable addition for all output
+           datasets, and rebuilding of the combined pipeline log.
+    """
     inspect_raw_data(
         input_dir=INPUT_DIR_CONVERSATIONS,
         logger=setup_logger(
@@ -94,7 +100,6 @@ def main() -> None:
 
     generate_working_datasets(
         input_dir_data=OUTPUT_DIR_MESSAGE_DATA,
-        output_dir_message_data=OUTPUT_DIR_MESSAGE_DATA,
         output_dir_collapsed_messages_data=OUTPUT_DIR_COLLAPSED_MESSAGES_DATA,
         output_dir_conversation_data=OUTPUT_DIR_CONVERSATION_DATA,
         logger=setup_logger(
