@@ -29,9 +29,9 @@ OUTPUT_DIR_COLLAPSED_MESSAGES_DATA = "Pipelines/Clean_Combine/Data/collapsed_mes
 OUTPUT_DIR_CONVERSATION_DATA = "Pipelines/Clean_Combine/Data/conversation_data.parquet"
 
 # Directories - global output
-OUTPUT_DIR_FINAL_MESSAGE_DATA = "./Data/message_data.parquet"
-OUTPUT_DIR_FINAL_COLLAPSED_MESSAGES_DATA = "./Data/collapsed_messages_data.parquet"
-OUTPUT_DIR_FINAL_CONVERSATION_DATA = "./Data/conversation_data.parquet"
+OUTPUT_DIR_FINAL_MESSAGE_DATA = "/work/ACT/Data/clean_combine/message_data.parquet"
+OUTPUT_DIR_FINAL_COLLAPSED_MESSAGES_DATA = "/work/ACT/Data/clean_combine/collapsed_messages_data.parquet"
+OUTPUT_DIR_FINAL_CONVERSATION_DATA = "/work/ACT/Data/clean_combine/conversation_data.parquet"
 
 # Directories - logs
 OUTPUT_DIR_LOG_FULL_PIPELINE = "./Pipelines/Clean_Combine/Logs/full_clean_combine_pipeline.log"
@@ -64,7 +64,7 @@ SEASON = {
 }
 
 # Other
-MESSAGE_SEPARATOR = "[SEP]"
+MESSAGE_SEPARATOR = " "
 ## _______________________ ##
 
 ## HELPER FUNCTIONS ##

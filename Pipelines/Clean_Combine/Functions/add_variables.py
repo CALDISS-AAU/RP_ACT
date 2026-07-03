@@ -53,7 +53,7 @@ def _add_gender(dataframe: pl.DataFrame, logger: logging.Logger) -> pl.DataFrame
         pl.when(pl.col("requester_gender_name").is_null()).then(None)
         .when(pl.col("requester_gender_name").is_in(["Dreng", "Ung mand"])).then(pl.lit("male"))
         .when(pl.col("requester_gender_name").is_in(["Pige", "Ung kvinde"])).then(pl.lit("female"))
-        .otherwise(pl.lit("Other"))
+        .otherwise(pl.lit("other"))
         .alias("gender")
     )
 
