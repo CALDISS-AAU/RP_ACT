@@ -1,7 +1,7 @@
 """Export stratified conversation examples from cleaned ACT data."""
 
 ## IMPORTS ##
-# Standard library
+# Standard
 import logging
 import random
 import re
@@ -19,6 +19,7 @@ def _add_topics(
     topic_contact_reasons: dict[str, list[str]],
     logger: logging.Logger,
 ) -> pl.DataFrame:
+    """Add topic labels to conversations based on their contact reasons."""
     logger.info("Adding topics to conversations.")
 
     contact_reason_to_topic = {}
@@ -71,6 +72,7 @@ def _add_topics(
 
 
 def _sanitize_folder_name(value: str) -> str:
+    """Convert a value into a safe folder name."""
     value = value.strip().title()
     value = re.sub(r"[^a-zA-Z0-9æøåÆØÅ_-]+", "_", value)
     value = re.sub(r"_+", "_", value)
@@ -82,6 +84,7 @@ def _calculate_topic_counts(
     rows: list[dict],
     topic_contact_reasons: dict[str, list[str]],
 ) -> dict[str, int]:
+    """Count selected conversations by topic."""
     topic_counts = {
         topic: 0
         for topic in topic_contact_reasons.keys()
@@ -98,6 +101,7 @@ def _calculate_topic_imbalance_score(
     rows: list[dict],
     topic_contact_reasons: dict[str, list[str]],
 ) -> int:
+    """Calculate the difference between most and least represented topics."""
     topic_counts = _calculate_topic_counts(
         rows=rows,
         topic_contact_reasons=topic_contact_reasons,
@@ -111,6 +115,7 @@ def _calculate_topic_imbalance_score(
 def _calculate_average_wordcount(
     rows: list[dict],
 ) -> float:
+    """Calculate the average wordcount across selected conversations."""
     return sum(row["text_words"] for row in rows) / len(rows)
 
 
@@ -118,6 +123,7 @@ def _calculate_wordcount_distance_from_target(
     rows: list[dict],
     target: int,
 ) -> float:
+    """Calculate how far the average wordcount is from the target."""
     avg_wordcount = _calculate_average_wordcount(rows)
 
     return abs(avg_wordcount - target)
@@ -128,6 +134,7 @@ def _is_average_wordcount_valid(
     target: int,
     divagation: int,
 ) -> bool:
+    """Check whether average wordcount is within the allowed target range."""
     avg_wordcount = _calculate_average_wordcount(rows)
 
     return target - divagation <= avg_wordcount <= target + divagation
@@ -137,6 +144,7 @@ def _find_most_underrepresented_topics(
     selected_rows: list[dict],
     topic_contact_reasons: dict[str, list[str]],
 ) -> list[str]:
+    """Find the topics with the lowest current representation."""
     topic_counts = _calculate_topic_counts(
         rows=selected_rows,
         topic_contact_reasons=topic_contact_reasons,
@@ -155,6 +163,7 @@ def _row_contains_any_topic(
     row: dict,
     topics: list[str],
 ) -> bool:
+    """Check whether a conversation contains at least one target topic."""
     return any(
         topic in row["topics"]
         for topic in topics
@@ -166,6 +175,7 @@ def _find_best_candidate_rows(
     candidate_rows: list[dict],
     topic_contact_reasons: dict[str, list[str]],
 ) -> list[dict]:
+    """Find candidate rows that minimise topic imbalance if selected next."""
     best_rows = []
     best_score = None
 
@@ -192,6 +202,7 @@ def _select_topic_guided_sample_once(
     rng: random.Random,
     logger: logging.Logger,
 ) -> list[dict]:
+    """Select one topic-guided sample from candidate conversations."""
     selected_rows = []
     remaining_rows = candidate_rows.copy()
 
@@ -249,6 +260,7 @@ def _select_best_topic_guided_sample(
     max_sampling_rounds: int,
     rng: random.Random,
 ) -> list[dict]:
+    """Select the best topic-guided sample across repeated sampling attempts."""
     best_invalid_sample = None
     best_invalid_score = None
 
@@ -374,6 +386,7 @@ def _select_balanced_rows(
     max_sampling_rounds: int,
     rng: random.Random,
 ) -> list[dict]:
+    """Select balanced conversations for one gender and age-group stratum."""
     logger.info(
         f"Selecting {n_conversations} conversations for "
         f"gender={gender}, age_group={age_group}."
@@ -437,6 +450,7 @@ def _save_conversation_to_docx(
     output_path: Path,
     logger: logging.Logger,
 ) -> None:
+    """Save one selected conversation as a Word document."""
     logger.info(f"Saving conversation docx to {output_path}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -458,6 +472,7 @@ def _save_selected_conversations(
     age_group: str,
     logger: logging.Logger,
 ) -> None:
+    """Save selected conversations for one stratum as Word documents."""
     output_folder = (
         Path(output_dir_data_folder)
         / _sanitize_folder_name(gender)
@@ -481,6 +496,7 @@ def _log_selected_distribution(
     age_group: str,
     logger: logging.Logger,
 ) -> None:
+    """Log topic distribution and average wordcount for selected rows."""
     topic_counts = _calculate_topic_counts(
         rows=selected_rows,
         topic_contact_reasons=topic_contact_reasons,
@@ -500,6 +516,7 @@ def _log_selected_distribution(
 def _build_contact_reason_to_topic(
     topic_contact_reasons: dict[str, list[str]],
 ) -> dict[str, str]:
+    """Build a lookup from contact reason to topic."""
     return {
         contact_reason: topic
         for topic, contact_reasons in topic_contact_reasons.items()
@@ -510,6 +527,7 @@ def _build_contact_reason_to_topic(
 def _calculate_unique_contact_reasons(
     rows: list[dict],
 ) -> set[str]:
+    """Calculate unique contact reasons across selected rows."""
     return {
         contact_reason
         for row in rows
@@ -521,6 +539,7 @@ def _calculate_unique_contact_reasons_by_topic(
     rows: list[dict],
     topic_contact_reasons: dict[str, list[str]],
 ) -> dict[str, set[str]]:
+    """Calculate unique contact reasons grouped by topic."""
     contact_reason_to_topic = _build_contact_reason_to_topic(
         topic_contact_reasons
     )
@@ -544,6 +563,7 @@ def _format_export_summary(
     selected_rows_by_group: dict[tuple[str, str], list[dict]],
     topic_contact_reasons: dict[str, list[str]],
 ) -> str:
+    """Format a text summary of the stratified conversation export."""
     lines = [
         "Stratified conversation export summary",
         "=" * 40,
@@ -607,6 +627,7 @@ def _save_export_summary(
     output_dir_data_folder: str,
     logger: logging.Logger,
 ) -> None:
+    """Save the stratified export summary as a text file."""
     output_path = Path(output_dir_data_folder) / "export_summary.txt"
 
     logger.info(f"Saving export summary to {output_path}")
@@ -628,6 +649,27 @@ def export_stratified_conversations(
     max_sampling_rounds: int = 3,
     random_seed: int = 42,
 ) -> None:
+    """Export stratified conversation examples as Word documents.
+       Reads the conversation-level dataset, assigns topic labels from contact
+           reasons, selects conversations within each gender and age-group
+           stratum, and exports the selected conversations as Word documents.
+           The selection aims to balance topic coverage while keeping average
+           wordcount close to the configured target for each gender.
+
+       Args:
+           input_dir_data: Path to the conversation-level parquet dataset.
+           output_dir_data_folder: Folder where exported conversations and the
+               export summary are saved.
+           logger: Logger used to write processing information.
+           topic_contact_reasons: Mapping of topics to their contact reasons.
+           sample_plan: Number of conversations to export for each gender and
+               age-group combination.
+           wordcount_settings: Wordcount limits and targets for each gender.
+           divagation: Allowed deviation from the target average wordcount.
+           max_attempts: Maximum sampling attempts per sampling round.
+           max_sampling_rounds: Maximum number of sampling rounds.
+           random_seed: Random seed used for reproducible sampling.
+    """
     logger.info(f"Reading input data from {input_dir_data}")
 
     df = pl.read_parquet(input_dir_data)
