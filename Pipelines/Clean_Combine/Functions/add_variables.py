@@ -5,18 +5,20 @@
 """
 
 ## IMPORTS ##
-# External
+# Standard
+import json
 import logging
 from pathlib import Path
+
+# External
 import polars as pl
 import pyarrow
-import json
-# Internal
 ## _______ ##
 
 ## HELPER FUNCTIONS ##
 def _dict_to_mapping(source_dict: dict) -> dict:
-    """Convert grouped values into a direct lookup mapping."""
+    """Convert grouped value mappings into a direct lookup mapping."""
+
     mapping = {
         key: values
         for values, keys in source_dict.items()
@@ -32,6 +34,7 @@ def _add_age_ranges(
     logger: logging.Logger,
 ) -> pl.DataFrame:
     """Add an age-group column from age range mappings."""
+
     age_mapping = _dict_to_mapping(age_ranges)
 
     dataframe = dataframe.with_columns(
@@ -95,6 +98,7 @@ def _add_time_of_day(
     logger: logging.Logger,
 ) -> pl.DataFrame:
     """Add a time-of-day column from hour range mappings."""
+
     time_mapping = _dict_to_mapping(time_ranges)
 
     dataframe = dataframe.with_columns(
@@ -113,6 +117,7 @@ def _add_season(
     logger: logging.Logger,
 ) -> pl.DataFrame:
     """Add a season column from month range mappings."""
+
     season_mapping = _dict_to_mapping(season_ranges)
 
     dataframe = dataframe.with_columns(
@@ -129,6 +134,7 @@ def _open_and_combine_contact_reasons(
     logger: logging.Logger,
 ) -> pl.DataFrame:
     """Read and combine all contact-reason CSV files."""
+
     dfs = []
     for file in Path(input_dir).rglob("*.csv"):
         dfs.append(pl.read_csv(file, separator=";"))
@@ -137,7 +143,8 @@ def _open_and_combine_contact_reasons(
     return df_combined
 
 def _merge_topic_row(row: dict) -> list[str]:
-    """Merge JSON topic lists from one row."""
+    """Merge JSON-encoded topic lists from one row."""
+
     topics = []
 
     for cell in row.values():
@@ -156,6 +163,7 @@ def _merge_topics(
     logger: logging.Logger
 ) -> pl.DataFrame:
     """Merge topic columns into one contact-reasons column."""
+
     topic_cols = []
     for col in dataframe.columns:
         if "topic_" in col:
@@ -180,7 +188,8 @@ def _add_contact_reason(
     dataframe_contact_reason: pl.DataFrame, 
     logger: logging.Logger
 ) -> pl.DataFrame:
-    """Add merged contact reasons to the message dataframe."""
+    """Add merged contact reasons to the dataframe."""
+
     dataframe_contact_reason = _merge_topics(dataframe_contact_reason, logger)
 
     dataframe_data = dataframe_data.join(
@@ -199,6 +208,7 @@ def _give_summary(
     logger: logging.Logger
 ) -> None:
     """Log dataframe shape, dtypes, and example values."""
+
     logger.info(f"Shape: {dataframe.shape}")
 
     for col in dataframe.columns:
@@ -218,20 +228,20 @@ def add_variables(
     time_of_day_dict: dict,
     season_dict: dict,
 ) -> None:
-    """Add derived variables to cleaned ACT message data. 
-       Reads cleaned message data and contact-reason data, 
-           logs initial summaries, adds demographic, temporal, text, 
-           and contact-reason features, logs a final summary, 
-           and exports the enriched dataframe as parquet. 
-           
-       Args: 
-           input_dir_data: Path to the cleaned parquet data. 
-           input_dir_contact_reason: Directory containing contact-reason CSV files. 
-           output_dir_data: Output path for the enriched parquet file. 
-           logger: Logger used to write processing information. 
-           age_range_dict: Mapping of age group names to age values. 
-           time_of_day_dict: Mapping of time-of-day labels to hour values. 
-           season_dict: Mapping of season labels to month values. 
+    """Add derived variables to cleaned ACT data.
+       Reads cleaned data and contact-reason data,
+           logs initial summaries, adds demographic, temporal, text,
+           and contact-reason features, logs a final summary,
+           and exports the enriched dataframe as parquet.
+
+       Args:
+           input_dir_data: Path to the cleaned parquet data.
+           input_dir_contact_reason: Directory containing contact-reason CSV files.
+           output_dir_data: Output path for the enriched parquet file.
+           logger: Logger used to write processing information.
+           age_range_dict: Mapping of age group names to age values.
+           time_of_day_dict: Mapping of time-of-day labels to hour values.
+           season_dict: Mapping of season labels to month values.
     """
 
     df = pl.read_parquet(input_dir_data)
