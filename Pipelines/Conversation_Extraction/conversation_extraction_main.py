@@ -1,35 +1,33 @@
-"""Main script for the Conversation_Extraction pipeline."""
+"""Run the ACT conversation-extraction pipeline.
+   The script investigates conversation-level data,
+       exports random conversation examples,
+       extracts stratified conversation samples,
+       and rebuilds the full pipeline log.
 
-"""Run the ACT clean-and-combine pipeline. 
-   The script inspects raw conversation data, 
-       cleans and combines the raw CSV files, 
-       adds derived variables, exports the final dataset, 
-       and rebuilds the full pipeline log. 
-
-   Run from the ACT folder with: 
-       python -m Pipelines.Conversation_Extraction.conversation_extraction_main 
+   Run from the ACT folder with:
+       python -m Pipelines.Conversation_Extraction.conversation_extraction_main
 """
+
 ## IMPORTS ##
 # Internal
 from Shared_Functions.logger_functionality import *
 from .Functions.data_investigation import investigate_data_stats
 from .Functions.get_random_conversations import export_random_conversation_examples
 from .Functions.extract_stratified_conversations import export_stratified_conversations
-
 ## _______ ##
 
 ## STATIC VARIABLES ##
 # Directories - input
-INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/clean_combine/conversation_data.parquet" 
+INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/clean_combine/conversation_data.parquet"
 
 # Directories - internal output
-OUTPUT_DIR_DATA_INVESTIGATION_PNGS = "Pipelines/Conversation_Extraction/Data/pngs" 
+OUTPUT_DIR_DATA_INVESTIGATION_PNGS = "Pipelines/Conversation_Extraction/Data/pngs"
 
 # Directories - global output
 OUTPUT_DIR_BASE = "/work/ACT/Output/Conversation_Extraction"
-OUTPUT_DIR_FINAL_DATA_INVESTIGATION = f"{OUTPUT_DIR_BASE}/data_investiogation_stats.docx" #"/work/RP_ACT/Output/Conversation_Extraction/data_investiogation_stats.docx"
-OUTPUT_DIR_CONVERSATION_EXAMPLES = f"{OUTPUT_DIR_BASE}/Conversation_Examples" #"/work/RP_ACT/Output/Conversation_Extraction/Conversation_Examples"
-OUTPUT_DIR_STRATIFIED_CONVERSATIONS = f"{OUTPUT_DIR_BASE}/Stratified_Conversations" #"/work/RP_ACT/Output/Conversation_Extraction/Stratified_Conversations"
+OUTPUT_DIR_FINAL_DATA_INVESTIGATION = f"{OUTPUT_DIR_BASE}/data_investiogation_stats.docx"
+OUTPUT_DIR_CONVERSATION_EXAMPLES = f"{OUTPUT_DIR_BASE}/Conversation_Examples"
+OUTPUT_DIR_STRATIFIED_CONVERSATIONS = f"{OUTPUT_DIR_BASE}/Stratified_Conversations"
 
 # Directories - logs
 OUTPUT_DIR_LOG_FULL_PIPELINE = "./Pipelines/Conversation_Extraction/Logs/full_conversation_extraction_pipeline.log"
@@ -177,15 +175,18 @@ WORDCOUNT_SETTINGS = {
         "target": 900,
     },
 }
-
 ## _______________________ ##
 
 ## HELPER FUNCTIONS ##
 ## ________________ ##
 
 ## MAIN FUNCTION ##
-def main() -> None: 
-    """Run all conversation-extraction pipeline steps."""
+def main() -> None:
+    """Run the full conversation-extraction pipeline.
+       Executes conversation data investigation, exports random
+           conversation examples, extracts stratified conversation
+           samples, and rebuilds the combined pipeline log.
+    """
     investigate_data_stats(
         INPUT_DIR_CONVERSATIONS,
         OUTPUT_DIR_FINAL_DATA_INVESTIGATION,
@@ -221,6 +222,15 @@ def main() -> None:
         sample_plan=SAMPLE_PLAN_CONVERSATIONS,
         wordcount_settings=WORDCOUNT_SETTINGS,
         divagation=150,
+    )
+
+    rebuild_pipeline_log(
+        step_log_paths=[
+            OUTPUT_DIR_LOG_DATA_INVESTIGATION,
+            OUTPUT_DIR_LOG_CONVERSATION_EXAMPLES,
+            OUTPUT_DIR_LOG_STRATIFIED_CONVERSATIONS,
+        ],
+        output_dir_log=OUTPUT_DIR_LOG_FULL_PIPELINE,
     )
 
 ## _____________ ##

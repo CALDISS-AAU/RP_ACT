@@ -1,4 +1,8 @@
-"""Investigate descriptive statistics for cleaned ACT data."""
+"""Generate descriptive statistics and reports for cleaned ACT conversation data.
+   The module calculates wordcount, topic, and contact-reason statistics,
+       creates distribution charts, and exports the results as a Word
+       report for exploratory data analysis.
+"""
 
 ## IMPORTS ##
 # Standard library
@@ -20,6 +24,7 @@ def _shortest_after_removing_bottom_percent(
     bottom_percent: float,
     logger: logging.Logger,
 ) -> int | None:
+    """Return the shortest wordcount after removing the lowest percentage of texts."""
     values = (
         df
         .select(pl.col("text_words").drop_nulls().sort())
@@ -50,6 +55,7 @@ def _longest_after_removing_top_percent(
     top_percent: float,
     logger: logging.Logger,
 ) -> int | None:
+    """Return the longest wordcount after removing the highest percentage of texts."""
     values = (
         df
         .select(pl.col("text_words").drop_nulls().sort())
@@ -80,6 +86,7 @@ def _calculate_wordcount_stats_for_df(
     bottom_percent: float,
     logger: logging.Logger,
 ) -> dict:
+    """Calculate summary wordcount statistics for a dataframe."""
     logger.debug(f"Calculating wordcount stats for {df.height} rows.")
 
     shortest_after_trim = _shortest_after_removing_bottom_percent(
@@ -123,6 +130,7 @@ def _calculate_grouped_wordcount_stats(
     bottom_percent: float,
     logger: logging.Logger,
 ) -> pl.DataFrame:
+    """Calculate wordcount statistics grouped by one or more columns."""
     if group_cols is None:
         logger.info("Calculating wordcount stats for entire dataset.")
 
@@ -167,6 +175,7 @@ def _create_wordcount_report_sections(
     bottom_percent: float,
     logger: logging.Logger,
 ) -> dict[str, dict]:
+    """Create report sections for wordcount statistics."""
     logger.info("Creating wordcount report sections.")
 
     sections = {
@@ -232,6 +241,7 @@ def _add_wordcount_interval(
     wordcount_interval_size: int,
     wordcount_stop_at: int,
 ) -> pl.DataFrame:
+    """Add wordcount interval labels to a dataframe."""
     return (
         df
         .with_columns(
@@ -265,6 +275,7 @@ def _calculate_wordcount_distribution(
     wordcount_stop_at: int,
     logger: logging.Logger,
 ) -> pl.DataFrame:
+    """Calculate the distribution of texts across wordcount intervals."""
     logger.info(
         f"Calculating wordcount distribution. "
         f"group_col={group_col}, "
@@ -308,6 +319,7 @@ def _save_wordcount_distribution_chart(
     output_path: Path,
     logger: logging.Logger,
 ) -> None:
+    """Save a wordcount distribution chart as a PNG image."""
     logger.info(f"Saving chart to {output_path}")
 
     plt.figure(figsize=(8, max(4, distribution_df.height * 0.18)))
@@ -366,6 +378,7 @@ def _save_wordcount_distribution_chart(
 
 
 def _contact_reason_in_topic_expr(contact_reasons: list[str]) -> pl.Expr:
+    """Create a Polars expression matching any contact reason in a topic."""
     return (
         pl.col("contact_reasons")
         .list.eval(pl.element().is_in(contact_reasons))
@@ -374,6 +387,7 @@ def _contact_reason_in_topic_expr(contact_reasons: list[str]) -> pl.Expr:
 
 
 def _contact_reason_exists_expr(contact_reason: str) -> pl.Expr:
+    """Create a Polars expression matching a specific contact reason."""
     return pl.col("contact_reasons").list.contains(contact_reason)
 
 
@@ -383,6 +397,7 @@ def _count_rows_for_label(
     group_col: str | None,
     is_topic: bool,
 ) -> dict:
+    """Count conversations for a topic or contact reason."""
     if group_col is None:
         return {
             "label": label,
@@ -414,6 +429,7 @@ def _create_topic_contact_reason_pivot_table(
     group_col: str | None,
     logger: logging.Logger,
 ) -> pl.DataFrame:
+    """Create a pivot table of topics and contact reasons."""
     logger.info(f"Creating topic/contact reason pivot table. group_col={group_col}")
 
     df = df.filter(pl.col("contact_reasons").is_not_null())
@@ -461,6 +477,7 @@ def _create_topic_contact_reason_report_sections(
     topic_contact_reasons: dict[str, list[str]],
     logger: logging.Logger,
 ) -> dict[str, dict]:
+    """Create report sections for topic and contact-reason statistics."""
     logger.info("Creating topic/contact reason report sections.")
 
     sections = {
@@ -516,6 +533,7 @@ def _create_topic_contact_reason_report_sections(
 def _calculate_contact_reason_count_distribution(
     df: pl.DataFrame,
 ) -> pl.DataFrame:
+    """Calculate the distribution of contact-reason counts per conversation."""
     return (
         df
         .filter(pl.col("contact_reasons").is_not_null())
@@ -534,6 +552,7 @@ def _calculate_topic_count_distribution(
     df: pl.DataFrame,
     topic_contact_reasons: dict[str, list[str]],
 ) -> pl.DataFrame:
+    """Calculate the distribution of topic counts per conversation."""
     contact_reason_to_topic = {
         contact_reason: topic
         for topic, contact_reasons in topic_contact_reasons.items()
@@ -569,6 +588,7 @@ def _calculate_topic_combination_distribution(
     df: pl.DataFrame,
     topic_contact_reasons: dict[str, list[str]],
 ) -> pl.DataFrame:
+    """Calculate the frequency of topic combinations across conversations."""
     contact_reason_to_topic = {
         contact_reason: topic
         for topic, contact_reasons in topic_contact_reasons.items()
@@ -608,6 +628,7 @@ def _calculate_wordcount_stats_by_number_of_contact_reasons(
     bottom_percent: float,
     logger: logging.Logger,
 ) -> pl.DataFrame:
+    """Calculate wordcount statistics by number of contact reasons."""
     logger.info(
         "Calculating wordcount stats grouped by number of contact reasons."
     )
@@ -643,6 +664,7 @@ def _calculate_wordcount_stats_by_number_of_topics(
     bottom_percent: float,
     logger: logging.Logger,
 ) -> pl.DataFrame:
+    """Calculate wordcount statistics by number of topics."""
     logger.info("Calculating wordcount stats grouped by number of topics.")
 
     contact_reason_to_topic = {
@@ -687,6 +709,7 @@ def _calculate_topic_frequency(
     df: pl.DataFrame,
     topic_contact_reasons: dict[str, list[str]],
 ) -> pl.DataFrame:
+    """Calculate the number of conversations containing each topic."""
     rows = []
 
     for topic, contact_reasons in topic_contact_reasons.items():
@@ -714,6 +737,7 @@ def _calculate_topic_frequency(
 
 
 def _prettify_column_name(column_name: str) -> str:
+    """Convert internal column names into readable report labels."""
     replacements = {
         "label": "Topic / contact reason",
         "group": "Group",
@@ -782,6 +806,7 @@ def _set_cell_text(
     text: str,
     bold: bool,
 ) -> None:
+    """Set text and bold formatting for a Word table cell."""
     cell.text = ""
 
     paragraph = cell.paragraphs[0]
@@ -795,6 +820,7 @@ def _add_polars_table_to_docx(
     title: str,
     logger: logging.Logger,
 ) -> None:
+    """Add a Polars dataframe as a table in a Word document."""
     logger.info(f"Adding table to docx section: {title}")
 
     doc.add_heading(title, level=2)
@@ -837,6 +863,7 @@ def _add_chart_to_docx(
     chart_path: Path,
     logger: logging.Logger,
 ) -> None:
+    """Add a chart image to a Word document."""
     logger.info(f"Adding chart to docx: {chart_path}")
 
     doc.add_picture(str(chart_path), width=Inches(5))
@@ -858,6 +885,7 @@ def _save_report_to_docx(
     wordcount_stop_at: int,
     logger: logging.Logger,
 ) -> None:
+    """Build and save the full conversation data investigation report."""
     output_docx_path = Path(output_dir_data)
     output_docx_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -988,6 +1016,24 @@ def investigate_data_stats(
     wordcount_interval_size: int,
     wordcount_stop_at: int,
 ) -> None:
+    """Generate descriptive statistics and a report for ACT conversation data.
+       Reads the cleaned conversation-level dataset, calculates wordcount,
+           topic, and contact-reason statistics, generates wordcount
+           distribution charts, and exports the results as a Word document.
+
+       Args:
+           input_dir_data: Path to the conversation-level parquet dataset.
+           output_dir_data: Output path for the generated Word report.
+           output_dir_pngs: Directory for intermediate chart images.
+           topic_contact_reasons: Mapping of topics to their contact reasons.
+           logger: Logger used to write processing information.
+           bottom_percent: Percentage removed when calculating trimmed
+               wordcount statistics.
+           wordcount_interval_size: Width of each wordcount interval in
+               distribution charts.
+           wordcount_stop_at: Upper limit after which all wordcounts are
+               grouped into a single interval.
+    """
     logger.info(f"Reading input data from {input_dir_data}")
 
     df = pl.read_parquet(input_dir_data)

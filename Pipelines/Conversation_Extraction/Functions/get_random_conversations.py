@@ -1,7 +1,7 @@
 """Export random full conversation examples from conversation data."""
 
 ## IMPORTS ##
-# Standard library
+# Standard
 import logging
 from pathlib import Path
 
@@ -16,7 +16,7 @@ def _get_random_conversations(
     n_conversations: int,
     logger: logging.Logger,
 ) -> pl.DataFrame:
-    """Get random conversations with non-empty message text."""
+    """Sample random conversations with non-empty message text."""
     logger.info(f"Sampling {n_conversations} random conversations.")
 
     valid_df = df.filter(
@@ -49,7 +49,7 @@ def _save_conversations_to_txt(
     output_dir: Path,
     logger: logging.Logger,
 ) -> None:
-    """Save each conversation to its own txt file."""
+    """Save each sampled conversation to a separate text file."""
     logger.info(
         f"Saving {df.height} conversation examples to {output_dir}"
     )
@@ -77,7 +77,17 @@ def export_random_conversation_examples(
     n_conversations: int,
     logger: logging.Logger,
 ) -> None:
-    """Export random full conversation texts to a txt file."""
+    """Export random full conversation examples as text files.
+       Reads the conversation-level dataset, samples conversations with
+           non-empty message text, and saves each selected conversation as
+           a separate text file with basic metadata.
+
+       Args:
+           input_dir_data: Path to the conversation-level parquet dataset.
+           output_dir_folder: Directory where conversation text files are saved.
+           n_conversations: Number of random conversations to export.
+           logger: Logger used to write processing information.
+    """
     logger.info(f"Reading conversation data from {input_dir_data}")
 
     df = pl.read_parquet(input_dir_data)
