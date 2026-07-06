@@ -1,16 +1,19 @@
-"""Combine and clean ACT CSV datasets for downstream analysis. 
-   The module reads raw CSV files, combines them into one dataframe, 
-       applies basic cleaning rules, inspects the cleaned result, 
-       and exports it as parquet. 
+"""Combine and clean ACT conversation datasets for downstream analysis.
+   The module reads raw conversation CSV files, combines them into a
+       single dataframe, applies project-specific cleaning rules,
+       inspects the cleaned result, and exports it as parquet.
 """
 
 ## IMPORTS ##
-# External
+# Standard
 import logging
 from pathlib import Path
-import pandas as pd
+
+# External
 import numpy as np
+import pandas as pd
 import pyarrow
+
 # Internal
 from .data_inspection import inspect_cleaned_data
 ## _______ ##
@@ -18,6 +21,7 @@ from .data_inspection import inspect_cleaned_data
 ## HELPER FUNCTIONS ##
 def _combine_data(input_dir: str, logger: logging.Logger) -> pd.DataFrame: 
     """Read and combine all CSV files from a directory."""
+
     dfs = []
     for file in Path(input_dir).rglob("*.csv"):
         dfs.append(pd.read_csv(file, sep=";"))
@@ -29,6 +33,7 @@ def _combine_data(input_dir: str, logger: logging.Logger) -> pd.DataFrame:
 
 def _remove_empty_texts(dataframe: pd.DataFrame, logger: logging.Logger) -> pd.DataFrame:
     """Remove rows with empty or whitespace-only message text."""
+
     rows_before = len(dataframe)
 
     dataframe_non_empty_text = dataframe[
@@ -45,6 +50,7 @@ def _remove_empty_texts(dataframe: pd.DataFrame, logger: logging.Logger) -> pd.D
 
 def _remove_regular_users(dataframe: pd.DataFrame, logger: logging.Logger) -> pd.DataFrame:
     """Remove messages from/to regular users."""
+
     rows_before = len(dataframe)
 
     dataframe_non_regulars = dataframe[
@@ -60,6 +66,7 @@ def _remove_regular_users(dataframe: pd.DataFrame, logger: logging.Logger) -> pd
 
 def _remove_ages_out_of_range(dataframe: pd.DataFrame, logger: logging.Logger) -> pd.DataFrame:
     """Keep only requester ages from 10 to 17."""
+
     rows_before = len(dataframe)
 
     dataframe_in_range_ages = dataframe[
@@ -87,6 +94,7 @@ def _remove_ages_out_of_range(dataframe: pd.DataFrame, logger: logging.Logger) -
 
 def _clean_data(dataframe: pd.DataFrame, logger: logging.Logger) -> pd.DataFrame:
     """Apply filtering and type conversions to the combined dataframe."""
+
     dataframe_step1 = _remove_empty_texts(dataframe, logger)
     dataframe_step2 = _remove_regular_users(dataframe_step1, logger)
     dataframe_step3 = _remove_ages_out_of_range(dataframe_step2, logger)
