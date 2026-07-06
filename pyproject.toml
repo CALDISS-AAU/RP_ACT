@@ -12,6 +12,8 @@ dependencies = [
     "polars>=1.30,<1.40",
     "polars-splitters>=0.3.4",
     "pyarrow>=24.0.0",
+    "pydantic>=2.13.4",
+    "ray>=2.56.0",
     "sentence-transformers>=5.5.1",
     "torch>=2.12.0",
     "transformers<5.0.0",

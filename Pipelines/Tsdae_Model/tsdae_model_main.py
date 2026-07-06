@@ -1,5 +1,5 @@
 """Main script for the Tsdae_Model pipeline."""
-# Internal imports 
+# Internal imports
 from Functions.train_func import (
     _train_tsdae,
     _train_message_model
@@ -8,7 +8,8 @@ from Functions.train_func import (
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
     split_data,
-    create_hf_dataset
+    create_hf_dataset,
+    prepare_tsdae_data
 )
 
 # Directories
