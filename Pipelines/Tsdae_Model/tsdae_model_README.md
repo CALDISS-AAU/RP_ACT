@@ -39,7 +39,28 @@ The pipeline expects a cleaned Parquet dataset at:
 /ACT/Data/clean_combine/message_data.parquet
 ```
 
-The dataset should contain message-level text data suitable for unsupervised TSDAE training.
+The dataset should contain message-level text data for this pipeline.
+
+## Pre-processing
+
+The pipeline relies on three functions found in:
+```
+/RP_ACT/Shared_Functions/modelling_functions.py
+```
+For the message-level model the pre-processing is kept at a small scale in order to keep each message as clean as possible.
+
+The steps taken are as follows:
+1. Splits the data into training, validation, and test sets.
+    Stratification is also used on gender and age_group to keep age and gender equal in each split
+2. Convertion into Hugging-face Datasets.dataset with only the text column where a 'source' and 'target' column are made. One for original text and one
+3. Both steps are run through a helper function that runs both steps
+
+The functions used are:
+1. split_data
+2. create_hf_dataset
+3. prepare_tsdae_data
+
+Please refer to the 'modelling_functions.py' for further instructions.
 
 ## Output
 
