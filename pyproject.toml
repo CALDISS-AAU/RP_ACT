@@ -4,10 +4,20 @@ version = "0.1.0"
 description = "This is a dummy project setup using uv. Use as reference for other CALDISS projects"
 requires-python = ">=3.12"
 dependencies = [
+    "accelerate>=1.14.0",
+    "datasets>=5.0.0",
+    "nltk>=3.9.4",
+    "optuna>=4.9.0",
     "matplotlib>=3.11.0",
     "pandas>=3.0.3",
-    "polars>=1.41.2",
+    "polars>=1.30,<1.40",
+    "polars-splitters>=0.3.4",
     "pyarrow>=24.0.0",
+    "pydantic>=2.13.4",
+    "ray>=2.56.0",
+    "sentence-transformers>=5.5.1",
+    "torch>=2.12.0",
+    "transformers<5.0.0",
     "python-docx>=1.2.0",
 ]
 
