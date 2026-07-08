@@ -1,4 +1,16 @@
-"""Investigate descriptive statistics for cleaned ACT data."""
+"""Generate descriptive statistics for the cleaned ACT datasets.
+
+This module computes summary statistics and value distributions for the
+three datasets used in the ACT analysis pipeline:
+
+- Original messages
+- Collapsed messages
+- Conversations
+
+For each dataset, descriptive statistics are calculated and stored in a
+shared JSON report that can be used for data quality assessment and
+decision-making.
+"""
 
 ## IMPORTS ##
 # Standard library
@@ -13,7 +25,8 @@ import polars as pl
 
 
 ## HELPER FUNCTIONS ##
-def _avg_med_min_max(df:pl.DataFrame, col:str) -> dict: 
+def _avg_med_min_max(df:pl.DataFrame, col:str) -> dict:
+    """Calculate the average, median, minimum and maximum of a numeric column.""" 
     return{
         "avg": round(df[col].mean(), 2),
         "med": df[col].median(),
@@ -23,7 +36,7 @@ def _avg_med_min_max(df:pl.DataFrame, col:str) -> dict:
 
 
 def _format_duration(minutes: float) -> str:
-    """Format a duration in minutes as 'Xh Ym' or 'Xm'."""
+    """Format a duration in minutes as a human-readable string."""
 
     hours = int(minutes // 60)
     minutes = int(round(minutes % 60))
@@ -59,6 +72,7 @@ def _avg_med_min_max_time(
 
 
 def _value_distribution(df: pl.DataFrame, col: str) -> dict:
+    """Calculate the count and percentage distribution of values in a column."""
     counts = df.group_by(col).len()
     total = df.height
 
@@ -72,6 +86,11 @@ def _value_distribution(df: pl.DataFrame, col: str) -> dict:
 
 
 def _list_value_distribution(df: pl.DataFrame, col: str) -> dict:
+    """Calculate the distribution of individual values stored in a list column.
+
+    Each list element is treated as a separate observation, allowing rows
+    containing multiple values to contribute to multiple groups.
+    """
     exploded = df.select(col).explode(col)
 
     counts = exploded.group_by(col).len()
@@ -87,6 +106,7 @@ def _list_value_distribution(df: pl.DataFrame, col: str) -> dict:
 
 
 def _list_length_distribution(df: pl.DataFrame, col: str) -> dict:
+    """Calculate the distribution of the number of elements in a list column."""
     lengths = df.with_columns(
         pl.col(col).list.len().alias("num_topics")
     )
@@ -104,6 +124,11 @@ def _list_length_distribution(df: pl.DataFrame, col: str) -> dict:
 
 
 def _save_stats(stats: dict, output_path: str | Path, key: str) -> None:
+    """Save a dataset's statistics to a shared JSON file.
+
+    If statistics already exist for the given key, they are overwritten
+    while all other sections of the report are preserved.
+    """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -125,6 +150,7 @@ def data_investigation_messages(
     output_dir: str,
     logger: logging.Logger,
 ):
+    """Generate descriptive statistics for the original message dataset."""
     stats_dict = {}
     pdf = pl.read_parquet(input_dir)
 
@@ -318,6 +344,7 @@ def data_investigation_collapsed_messages(
     output_dir: str,
     logger: logging.Logger,
 ):
+    """Generate descriptive statistics for the collapsed message dataset."""
     stats_dict = {}
     pdf = pl.read_parquet(input_dir)
 
@@ -448,6 +475,7 @@ def data_investigation_conversations(
     output_dir: str,
     logger: logging.Logger,
 ):
+    """Generate descriptive statistics for the conversation dataset."""
     stats_dict = {}
     pdf = pl.read_parquet(input_dir)
 

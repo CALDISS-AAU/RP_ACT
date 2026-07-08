@@ -1,14 +1,15 @@
-"""Main script for the Conversation_Extraction pipeline."""
+"""Main script for the Data_Stats_Extraction pipeline.
 
-"""Run the ACT clean-and-combine pipeline. 
-   The script inspects raw conversation data, 
-       cleans and combines the raw CSV files, 
-       adds derived variables, exports the final dataset, 
-       and rebuilds the full pipeline log. 
+Run the ACT data statistics extraction pipeline.
+The script generates descriptive statistics for the cleaned ACT datasets,
+including the original messages, collapsed messages, and conversations.
+The resulting statistics are exported to a shared JSON file, and a
+pipeline log is rebuilt from the logs of the individual processing steps.
 
-   Run from the ACT folder with: 
-       python -m Pipelines.Data_Stats_Extraction.data_stats_extraction_main 
+Run from the ACT folder with:
+    python -m Pipelines.Data_Stats_Extraction.data_stats_extraction_main
 """
+
 ## IMPORTS ##
 # Internal
 from Shared_Functions.logger_functionality import *
