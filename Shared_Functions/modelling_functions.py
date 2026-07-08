@@ -9,6 +9,8 @@ import nltk
 nltk.download('punkt_tab')
 
 # Build model baseline
+
+
 def build_sentence_transformer(
     model_name: str = "BAAI/bge-m3",
     max_seq_length: int = 128,
@@ -29,6 +31,8 @@ def build_sentence_transformer(
     )
 
 # Splitter
+
+
 def split_data(
     df: pl.DataFrame,
     val_size: float = 0.15,
@@ -51,16 +55,19 @@ def split_data(
     return train_df, val_df, test_df
 
 # Create Datasets.Dataset
+
+
 def create_hf_dataset(
     df: pl.DataFrame,
     text_column: str = 'msg_tekst'
-) -> Dataset: 
+) -> Dataset:
 
     texts = df[text_column].to_list()   
     return Dataset.from_dict({
         "source": texts,
         "target": texts,
     })
+
 
 def prepare_tsdae_data(input_dir):  
     dataset = pl.read_parquet(input_dir)
