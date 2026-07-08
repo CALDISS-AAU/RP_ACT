@@ -24,7 +24,7 @@ INPUT_DIR_COLLAPSED_MESSAGES = f"{INPUT_DIR_BASE}/collapsed_messages_data.parque
 INPUT_DIR_CONVERSATIONS = f"{INPUT_DIR_BASE}/conversation_data.parquet" 
 
 # Directories - global output
-OUTPUT_DIR_DATA_STATS = "./Data/Data_Stats_Extraction/data_stats.json" #"/work/ACT/Data/Data_Stats_Extraction/data_stats.jsonl"
+OUTPUT_DIR_DATA_STATS = "/work/ACT/Data/Data_Stats_Extraction/data_stats.json" #"/work/ACT/Data/Data_Stats_Extraction/data_stats.jsonl"
 
 # Directories - logs
 OUTPUT_DIR_LOG_BASE = "./Pipelines/Data_Stats_Extraction/Logs"
@@ -52,23 +52,32 @@ def main() -> None:
         )
     )
 
-    # data_investigation_collapsed_messages(
-    #     INPUT_DIR_COLLAPSED_MESSAGES,
-    #     OUTPUT_DIR_DATA_STATS,
-    #     logger=setup_logger(
-    #         OUTPUT_DIR_LOG_COLLAPSED_MESSAGES,
-    #         logger_name="data_stats_extraction.collapsed_message_data_investigation"
-    #     )
-    # )
+    data_investigation_collapsed_messages(
+        INPUT_DIR_COLLAPSED_MESSAGES,
+        OUTPUT_DIR_DATA_STATS,
+        logger=setup_logger(
+            OUTPUT_DIR_LOG_COLLAPSED_MESSAGES,
+            logger_name="data_stats_extraction.collapsed_message_data_investigation"
+        )
+    )
 
-    # data_investigation_conversations(
-    #     INPUT_DIR_CONVERSATIONS,
-    #     OUTPUT_DIR_DATA_STATS,
-    #     logger=setup_logger(
-    #         OUTPUT_DIR_LOG_CONVERSATIONS,
-    #         logger_name="data_stats_extraction.conversation_data_investigation"
-    #     )
-    # )
+    data_investigation_conversations(
+        INPUT_DIR_CONVERSATIONS,
+        OUTPUT_DIR_DATA_STATS,
+        logger=setup_logger(
+            OUTPUT_DIR_LOG_CONVERSATIONS,
+            logger_name="data_stats_extraction.conversation_data_investigation"
+        )
+    )
+
+    rebuild_pipeline_log(
+        step_log_paths=[
+            OUTPUT_DIR_LOG_MESSAGES,
+            OUTPUT_DIR_LOG_COLLAPSED_MESSAGES,
+            OUTPUT_DIR_LOG_CONVERSATIONS,
+        ],
+        output_dir_log=OUTPUT_DIR_LOG_FULL_PIPELINE,
+    )
 
 ## _____________ ##
 
