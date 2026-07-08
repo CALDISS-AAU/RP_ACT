@@ -35,6 +35,38 @@ def _value_distribution(df: pl.DataFrame, col: str) -> dict:
     }
 
 
+def _list_value_distribution(df: pl.DataFrame, col: str) -> dict:
+    exploded = df.select(col).explode(col)
+
+    counts = exploded.group_by(col).len()
+    total_rows = df.height
+
+    return {
+        (row[col] if row[col] is not None else "No value"): {
+            "count": row["len"],
+            "percentage": round(100 * row["len"] / total_rows, 2),
+        }
+        for row in counts.iter_rows(named=True)
+    }
+
+
+def _list_length_distribution(df: pl.DataFrame, col: str) -> dict:
+    lengths = df.with_columns(
+        pl.col(col).list.len().alias("num_topics")
+    )
+
+    counts = lengths.group_by("num_topics").len().sort("num_topics")
+    total_rows = df.height
+
+    return {
+        row["num_topics"]: {
+            "count": row["len"],
+            "percentage": round(100 * row["len"] / total_rows, 2),
+        }
+        for row in counts.iter_rows(named=True)
+    }
+
+
 def _save_stats(stats: dict, output_path: str | Path, key: str) -> None:
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -204,10 +236,23 @@ def data_investigation_messages(
     logger.info("=" * 20)
 
     season_distribution = _value_distribution(pdf, "season")
-
     logger.info(
         f"Season distribution:"
         f"\n{season_distribution}"
+    )
+    logger.info("=" * 20)
+
+    topic_distribution = _list_value_distribution(pdf, "contact_topics")
+    logger.info(
+        f"Topic distribution:"
+        f"\n{topic_distribution}"
+    )
+    logger.info("=" * 20)
+
+    topic_number_distribution = _list_length_distribution(pdf, "contact_topics")
+    logger.info(
+        f"Number of topics distribution:"
+        f"\n{topic_number_distribution}"
     )
     logger.info("=" * 20)
 
@@ -216,7 +261,9 @@ def data_investigation_messages(
         "Gender": gender_distribution,
         "Platform": platform_distribution,
         "Time of day": time_of_day_distribution,
-        "Sesaon": season_distribution
+        "Sesaon": season_distribution,
+        "Contact topics": topic_distribution,
+        "Number of contact topics": topic_number_distribution
     }
 
     logger.info("Distributions for messages have been added to stats_dict")
