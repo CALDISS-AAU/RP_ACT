@@ -3,6 +3,8 @@
 ## IMPORTS ##
 # Standard library
 import logging
+from pathlib import Path
+import json
 
 # External
 import polars as pl 
@@ -20,13 +22,33 @@ def _avg_med_min_max(df:pl.DataFrame, col:str) -> dict:
     }
 
 
-def _value_distribution(df:pl.DataFrame, col:str) -> dict:
+def _value_distribution(df: pl.DataFrame, col: str) -> dict:
     counts = df.group_by(col).len()
+    total = df.height
 
     return {
-        row[col]: row["len"]
+        (row[col] if row[col] is not None else "No value"): {
+            "count": row["len"],
+            "percentage": round(100 * row["len"] / total, 2)
+        }
+        for row in counts.iter_rows(named=True)
     }
 
+
+def _save_stats(stats: dict, output_path: str | Path, key: str) -> None:
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if output_path.exists():
+        with output_path.open("r", encoding="utf-8") as f:
+            existing = json.load(f)
+    else:
+        existing = {}
+
+    existing[key] = stats
+
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(existing, f, indent=4, ensure_ascii=False)
 ## ________________ ##
 
 ## MAIN FUNCTIONALITY ##
@@ -146,115 +168,64 @@ def data_investigation_messages(
 
     stats_dict["stats"] = {
         "Message_stats": message_stats,
-        "Conversation_stats": conversation_stats
+        "Conversation_stats (messages pr conversation)": conversation_stats
     }
     logger.info("Stats for messages and conversations have been added to stats_dict")
     logger.info(f"Current stats_dict: {stats_dict}")
     logger.info("="*20)
 
     # Include distributions
-    number_of_messages_preteen = pdf.filter(
-        pl.col("age_group") == "pre teen"
-    ).height 
-    number_of_messages_earlyteen = pdf.filter(
-        pl.col("age_group") == "early teen"
-    ).height 
-    number_of_messages_teen = pdf.filter(
-        pl.col("age_group") == "teen"
-    ).height 
+    age_distribution = _value_distribution(pdf, "age_group")
+    logger.info(
+        f"Age distribution:"
+        f"\n{age_distribution}"
+    )
+    logger.info("=" * 20)
 
-    age_distribution = {
-        "Pre teen (10-12)": number_of_messages_preteen,
-        "Early teen (13-14)": number_of_messages_earlyteen,
-        "Teen (15-17)": number_of_messages_teen
-    }
+    gender_distribution = _value_distribution(pdf, "gender")
+    logger.info(
+        f"Gender distribution:"
+        f"\n{gender_distribution}"
+    )
+    logger.info("=" * 20)
+
+    platform_distribution = _value_distribution(pdf, "requester_channel")
+    logger.info(
+        f"Platform distribution:"
+        f"\n{platform_distribution}"
+    )
+    logger.info("=" * 20)
+
+    time_of_day_distribution = _value_distribution(pdf, "time_of_day")
+    logger.info(
+        f"Time of day distribution:"
+        f"\n{time_of_day_distribution}"
+    )
+    logger.info("=" * 20)
+
+    season_distribution = _value_distribution(pdf, "season")
 
     logger.info(
-        f"Age distribution:\
-        \nPre teen (10-12): {number_of_messages_preteen}\
-        \nEarly teen (13-14): {number_of_messages_earlyteen}\
-        \nTeen (15-17): {number_of_messages_teen}\
-        \nDifference in total messages and pre teens, early teens and teens: {
-            number_of_messages 
-            - number_of_messages_preteen 
-            - number_of_messages_earlyteen 
-            - number_of_messages_teen
-        }"
+        f"Season distribution:"
+        f"\n{season_distribution}"
     )
-    logger.info("="*20)
-
-    number_of_messages_male = pdf.filter(
-        pl.col("gender") == "male"
-    ).height
-    number_of_messages_female = pdf.filter(
-        pl.col("gender") == "female"
-    ).height
-    number_of_messages_other = pdf.filter(
-        pl.col("gender") == "other"
-    ).height
-
-    number_of_messages_no_gender = pdf.filter(
-        pl.col("gender").is_null()
-    ).height
-
-    gender_distribution = {
-        "Male": number_of_messages_male,
-        "Female": number_of_messages_female,
-        "Other": number_of_messages_other,
-        "No value": number_of_messages_no_gender
-    }
-
-    logger.info(
-        f"Gender distribution:\
-        \nMale: {number_of_messages_male}\
-        \nFemale: {number_of_messages_female}\
-        \nOther: {number_of_messages_other}\
-        \nNo gender: {number_of_messages_no_gender}\
-        \nDifference in total messages and males, females and other (should = no gender): {
-            number_of_messages 
-            - number_of_messages_male 
-            - number_of_messages_female 
-            - number_of_messages_other
-        }"
-    )
-    logger.info("="*20)
-
-    number_of_messages_sms = pdf.filter(
-        pl.col("requester_channel") == "sms"
-    ).height
-
-    number_of_messages_chat = pdf.filter(
-        pl.col("requester_channel") == "webchat"
-    ).height
-
-    platform_distribution = {
-        "SMS": number_of_messages_sms,
-        "Chat": number_of_messages_chat
-    }
-
-    logger.info(
-        f"Platform distribution:\
-        \nSMS: {number_of_messages_sms}\
-        \nChat: {number_of_messages_chat}\
-        \nDifference in total messages and SMS and chat (should = 0): {
-            number_of_messages
-            - number_of_messages_sms
-            - number_of_messages_chat
-        }"
-    )
-    logger.info("="*20)
-
-
+    logger.info("=" * 20)
 
     stats_dict["Distributions"] = {
         "Age": age_distribution,
         "Gender": gender_distribution,
-        "Platform": platform_distribution
+        "Platform": platform_distribution,
+        "Time of day": time_of_day_distribution,
+        "Sesaon": season_distribution
     }
 
     logger.info("Distributions for messages have been added to stats_dict")
     logger.info(f"Current stats_dict: {stats_dict}")
     logger.info("="*20)
+
+    # Saving stats
+    _save_stats(stats_dict, output_dir, "Messages")
+    logger.info("Stats have been saved to json")
 
 
 def data_investigation_collapsed_messages(
