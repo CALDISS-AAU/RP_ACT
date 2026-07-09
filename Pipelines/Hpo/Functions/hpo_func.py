@@ -114,7 +114,7 @@ def _hpo_compute_objective(
 #     return best_trial
 
 
-def _run_tsdae_hpo(input_dir, output_dir, log):
+def _run_tsdae_hpo(input_dir, output_dir):
 
     train_dataset, val_dataset, test_df = prepare_tsdae_data(input_dir)
 

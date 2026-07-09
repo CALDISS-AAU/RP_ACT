@@ -24,5 +24,5 @@ uv run --active accelerate launch \
  --lr 1.7739772343958358e-05 \
  --warmup-ratio 0.18892376542532993 \
  --max-grad-norm 1.0 \
- --weight-decay 0.053764672262248105 \
+ --weight-decay 0.01 \
  2>&1 | tee "$LOGFILE"
