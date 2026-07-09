@@ -7,7 +7,7 @@ The resulting statistics are exported to a shared JSON file, and a
 pipeline log is rebuilt from the logs of the individual processing steps.
 
 Run from the ACT folder with:
-    python -m Pipelines.Data_Stats_Extraction.data_stats_extraction_main
+    uv run python -m Pipelines.Data_Stats_Extraction.data_stats_extraction_main
 """
 
 ## IMPORTS ##
@@ -19,13 +19,13 @@ from .Functions.data_investigation import *
 
 ## STATIC VARIABLES ##
 # Directories - input
-INPUT_DIR_BASE = "/work/ACT/Data/Clean_Combine"
+INPUT_DIR_BASE = "./Data/Clean_Combine"
 INPUT_DIR_MESSAGES = f"{INPUT_DIR_BASE}/message_data.parquet" 
 INPUT_DIR_COLLAPSED_MESSAGES = f"{INPUT_DIR_BASE}/collapsed_messages_data.parquet" 
 INPUT_DIR_CONVERSATIONS = f"{INPUT_DIR_BASE}/conversation_data.parquet" 
 
 # Directories - global output
-OUTPUT_DIR_DATA_STATS = "/work/ACT/Data/Data_Stats_Extraction/data_stats.json" #"/work/ACT/Data/Data_Stats_Extraction/data_stats.jsonl"
+OUTPUT_DIR_DATA_STATS = "./Data/Data_Stats_Extraction/data_stats.json" 
 
 # Directories - logs
 OUTPUT_DIR_LOG_BASE = "./Pipelines/Data_Stats_Extraction/Logs"
