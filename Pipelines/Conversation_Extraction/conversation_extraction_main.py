@@ -18,7 +18,7 @@ from .Functions.extract_stratified_conversations import export_stratified_conver
 
 ## STATIC VARIABLES ##
 # Directories - input
-INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/clean_combine/conversation_data.parquet"
+INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/Clean_Combine/conversation_data.parquet"
 
 # Directories - internal output
 OUTPUT_DIR_DATA_INVESTIGATION_PNGS = "Pipelines/Conversation_Extraction/Data/pngs"

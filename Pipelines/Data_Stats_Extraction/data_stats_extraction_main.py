@@ -19,7 +19,7 @@ from .Functions.data_investigation import *
 
 ## STATIC VARIABLES ##
 # Directories - input
-INPUT_DIR_BASE = "/work/ACT/Data/clean_combine"
+INPUT_DIR_BASE = "/work/ACT/Data/Clean_Combine"
 INPUT_DIR_MESSAGES = f"{INPUT_DIR_BASE}/message_data.parquet" 
 INPUT_DIR_COLLAPSED_MESSAGES = f"{INPUT_DIR_BASE}/collapsed_messages_data.parquet" 
 INPUT_DIR_CONVERSATIONS = f"{INPUT_DIR_BASE}/conversation_data.parquet" 

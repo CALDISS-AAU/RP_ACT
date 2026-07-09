@@ -292,5 +292,8 @@ def add_variables(
     logger.info("_____________________________________________________")
     logger.info("")
 
-    df.write_parquet(output_dir_data)
+    output_path = Path(output_dir_data)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    df.write_parquet(output_path)
 ## __________________ ##
