@@ -41,14 +41,14 @@ def split_data(
     train_df, temp_df = split_into_train_eval(
         df,
         eval_rel_size=val_size + test_size,
-        stratify_by=['requester_gender_name', 'age_group'],
+        stratify_by=['gender', 'age_group'],
         shuffle=False,
         seed=1849
     )
     val_df, test_df = split_into_train_eval(
         temp_df,
         eval_rel_size=test_size / (val_size + test_size),
-        stratify_by=['requester_gender_name', 'age_group'],
+        stratify_by=['gender', 'age_group'],
         shuffle=False,
         seed=1349
     )

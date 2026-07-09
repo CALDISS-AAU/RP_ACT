@@ -20,7 +20,7 @@ uv run --active accelerate launch \
  --output-dir-logs /work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/Logs/trainer.log \
  --output-dir-model /work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT_messagelvl_embed \
  --epochs 5 \
- --batch-size 64 \
+ --batch-size 32 \
  --lr 1.7739772343958358e-05 \
  --warmup-ratio 0.18892376542532993 \
  --max-grad-norm 1.0 \
