@@ -17,5 +17,8 @@ Pipelines/*/Data/*
 # Logs
 Pipelines/*/Logs/*
 
+# uv
+.lock
+
 # Keep .gitkeep
 !.gitkeep

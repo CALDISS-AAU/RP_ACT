@@ -1,20 +1,21 @@
 """Main script for the Hpo pipeline."""
 import argparse
+import os
+from pathlib import Path
 # Internal imports
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
     prepare_tsdae_data
 )
+
 from Functions.hpo_func import (
     _hpo_loss_init,
     _hpo_compute_objective,
     _run_tsdae_hpo
 )
 
-# Directories
-INPUT_DIR_DATA = "/work/RP_act/ACT/Data/clean_combine/message_data.parquet"
-OUTPUT_DIR_LOG = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/Logs/hpo.log"
-OUTPUT_DIR = '/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/output'
+REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
+
 
 def main():
     parser = argparse.ArgumentParser(description="Perform HPO on TSDAE model")
@@ -24,13 +25,33 @@ def main():
         help="Path to input .parquet file"
     )
     parser.add_argument(
+        "--output-trial-dir",
+        default=(REPO_ROOT / "Pipelines" / "Hpo" / "output")
+    )
+    parser.add_argument(
         '--output-dir-logs',
         default=str(REPO_ROOT / "Pipelines" / 'Hpo' / "Logs"),
-        help="Directory for storing HPO logs",
+        help="Directory for storing HPO trial outputs",
+    )
+    parser.add_argument(
+        "--n-trials",
+        type=int,
+        default=5,
+        help=(
+            "Number of trials to run in this worker"
+        ),
     )
 
     args = parser.parse_args()
-    _run_tsdae_hpo(input_dir=args.data_path, output_dir=OUTPUT_DIR)
+    
+    
+    _run_tsdae_hpo(
+        input_dir=args.data_path,
+        output_dir=args.output_trial_dir,
+        log_dir=args.output_dir_logs,
+        n_trials=args.n_trials,
+        )
+
 
 if __name__ == "__main__":
     main()

@@ -17,8 +17,8 @@ uv run --active accelerate launch \
  --mixed_precision=bf16 \
  Pipelines/Tsdae_Model/tsdae_model_main.py \
  --data-path /work/RP_act/ACT/Data/clean_combine/message_data.parquet \
- --output-dir-logs /work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/Logs/trainer.log \
- --output-dir-model /work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT_messagelvl_embed \
+ --output-dir-logs "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/Logs/trainer.log" \
+ --output-dir-model "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT_messagelvl_embed" \
  --epochs 5 \
  --batch-size 32 \
  --lr 1.7739772343958358e-05 \
