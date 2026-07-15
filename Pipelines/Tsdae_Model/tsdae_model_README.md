@@ -145,7 +145,7 @@ The entry point calls:
 main()
 ```
 
-which trains the message-level embedding model using the configured input, output, and logging paths.
+which trains the TSDAE embedding model using the configured input, output, and logging paths.
 
 ## Configuration
 

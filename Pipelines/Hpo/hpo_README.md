@@ -73,3 +73,31 @@ The trainer uses:
 * `DenoisingAutoEncoderLoss`
 * BF16 training
 * 8 dataloader workers
+
+### Training Configuration
+The HPO is initiated twice using GPU ID's. Make sure you have two GPU's available when starting or else the script will fail.
+
+
+CUDA_VISIBLE_DEVICES=0 uv run Pipelines/Hpo/hpo_main.py \
+  --data-path "/work/RP_act/ACT/Data/Clean_Combine/collapsed_messages_data.parquet" \
+  --output-dir-logs "./RP_ACT/Pipelines/Hpo/Logs" \
+  --output-trial-dir "./RP_ACT/Pipelines/Hpo/output" \
+  2>&1 | tee "$LOGFILE_GPU0" &
+
+The entry point calls:
+
+```python
+main()
+```
+Which starts the HPO study using the configured input, output and logging paths.
+
+### Configuration
+
+The main script has modular paths for input, output and logging but takes the RP_ACT repo as standard:
+
+```python
+OUTPUT_DIR="./RP_ACT/Pipelines/Hpo/output"
+DATA_PATH="/work/RP_act/ACT/Data/Clean_Combine/collapsed_messages_data.parquet"
+```
+Update these paths if running the pipeline in a different environment.
+
