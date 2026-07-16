@@ -8,7 +8,8 @@ from dataclasses import dataclass
 import polars as pl
 from sentence_transformers.losses import DenoisingAutoEncoderLoss
 from sentence_transformers.trainer import SentenceTransformerTrainer
-from sentence_transformers.training_args import SentenceTransformerTrainingArguments
+from sentence_transformers.training_args import (
+    SentenceTransformerTrainingArguments)
 
 # Internal
 from Shared_Functions.modelling_functions import (
@@ -54,6 +55,7 @@ def _build_training_args(
         max_grad_norm=max_grad_norm,
         weight_decay=weight_decay,
         bf16=True,
+        eval_strategy="epoch",
 
         save_strategy='steps',
         save_steps=500,
@@ -71,7 +73,8 @@ def _train_tsdae(
     model,
     train_dataset,
     val_dataset,
-    config: TSDEATrainingConfig):
+    config: TSDEATrainingConfig
+):
     loss = DenoisingAutoEncoderLoss(
         model,
         tie_encoder_decoder=True
@@ -95,7 +98,14 @@ def _train_tsdae(
         loss=loss,
     )
 
-    trainer.train()
+    train_result = trainer.train()
+    eval_metrics = trainer.evaluate(
+        eval_dataset=val_dataset,
+    )
+
+    print(f"Training metrics: %s, {train_result.metrics}")
+    print(f"Validation metrics: %s, {eval_metrics}")
+    print(f"Validation loss: %.6f,{eval_metrics['eval_loss']:.6}",)
     model.save_pretrained(config.output_dir)
     return model
 
@@ -114,3 +124,5 @@ def _train_model(input_dir, config):
         val_dataset,
         config
         )
+
+    return model
