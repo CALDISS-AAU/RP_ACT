@@ -62,14 +62,14 @@ def create_hf_dataset(
     text_column: str = 'msg_tekst'
 ) -> Dataset:
 
-    texts = df[text_column].to_list()   
+    texts = df[text_column].to_list()
     return Dataset.from_dict({
         "source": texts,
         "target": texts,
     })
 
 
-def prepare_tsdae_data(input_dir):  
+def prepare_tsdae_data(input_dir):
     dataset = pl.read_parquet(input_dir)
     train_df, val_df, test_df = split_data(dataset)
 

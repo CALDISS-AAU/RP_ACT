@@ -60,6 +60,7 @@ def _hpo_loss_init(model):
 def _hpo_search_space(trial):
     """
     Define the Optuna hyperparameter search space.
+    All SentenceTransformerTrainingArguments are valid for this seach space.
     """
     return {
         "num_train_epochs": trial.suggest_int(
