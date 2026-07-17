@@ -6,7 +6,7 @@
        and rebuilds the full pipeline log.
 
    Run from the ACT folder with:
-       python -m Pipelines.Clean_Combine.clean_combine_main
+       uv run python -m Pipelines.Clean_Combine.clean_combine_main
 """
 
 ## IMPORTS ##
@@ -20,8 +20,8 @@ from .Functions.add_variables import add_variables
 
 ## STATIC VARIABLES ##
 # Directories - input
-INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/raw/samtaler" # "./Data/raw/samtaler"
-INPUT_DIR_CONTACT_REASONS = "/work/ACT/Data/raw/emner" # "./Data/raw/emner"
+INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/raw/samtaler"
+INPUT_DIR_CONTACT_REASONS = "/work/ACT/Data/raw/emner"
 
 # Directories - internal output
 OUTPUT_DIR_MESSAGE_DATA = "Pipelines/Clean_Combine/Data/message_data.parquet" 
@@ -29,9 +29,9 @@ OUTPUT_DIR_COLLAPSED_MESSAGES_DATA = "Pipelines/Clean_Combine/Data/collapsed_mes
 OUTPUT_DIR_CONVERSATION_DATA = "Pipelines/Clean_Combine/Data/conversation_data.parquet"
 
 # Directories - global output
-OUTPUT_DIR_FINAL_MESSAGE_DATA = "/work/ACT/Data/clean_combine/message_data.parquet"
-OUTPUT_DIR_FINAL_COLLAPSED_MESSAGES_DATA = "/work/ACT/Data/clean_combine/collapsed_messages_data.parquet"
-OUTPUT_DIR_FINAL_CONVERSATION_DATA = "/work/ACT/Data/clean_combine/conversation_data.parquet"
+OUTPUT_DIR_FINAL_MESSAGE_DATA = "./Data/Clean_Combine/message_data.parquet"
+OUTPUT_DIR_FINAL_COLLAPSED_MESSAGES_DATA = "./Data/Clean_Combine/collapsed_messages_data.parquet"
+OUTPUT_DIR_FINAL_CONVERSATION_DATA = "./Data/Clean_Combine/conversation_data.parquet"
 
 # Directories - logs
 OUTPUT_DIR_LOG_FULL_PIPELINE = "./Pipelines/Clean_Combine/Logs/full_clean_combine_pipeline.log"
