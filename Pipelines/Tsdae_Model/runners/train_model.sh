@@ -18,11 +18,11 @@ uv run --active accelerate launch \
  Pipelines/Tsdae_Model/tsdae_model_main.py \
  --data-path /work/RP_act/ACT/Data/Clean_Combine/message_data.parquet \
  --output-dir-logs "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/Logs/trainer.log" \
- --output-dir-model "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-Collapsed-v3" \
- --epochs 6 \
- --batch-size 32 \
- --lr 2.9006604711101802e-06 \
- --warmup-ratio 0.029801408130959731 \
- --max-grad-norm 2.0 \
- --weight-decay 0.0011808351892388493 \
+ --output-dir-model "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-message-v2" \
+ --epochs 7 \
+ --batch-size 16 \
+ --lr 1.7739772343958358e-5 \
+ --warmup-ratio 0.18892376542532993 \
+ --max-grad-norm 1.0 \
+ --weight-decay 0.053764672262248105 \
  2>&1 | tee "$LOGFILE"

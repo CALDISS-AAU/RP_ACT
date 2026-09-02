@@ -8,14 +8,13 @@ from dataclasses import dataclass
 import polars as pl
 from sentence_transformers.losses import DenoisingAutoEncoderLoss
 from sentence_transformers.trainer import SentenceTransformerTrainer
-from sentence_transformers.training_args import (
-    SentenceTransformerTrainingArguments)
+from sentence_transformers.training_args import SentenceTransformerTrainingArguments
 
 # Internal
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
     split_data,
-    create_hf_dataset
+    create_hf_dataset,
 )
 
 # Classes
@@ -26,13 +25,15 @@ class TSDEATrainingConfig:
     """
     Config class for specifying parameters for TSDAE model training
     """
+
     output_dir: str
     epochs: int = 5
     batch_size: int = 32
     learning_rate: float = 2e-5
     warmup_ratio: float = 0.1
-    max_grad_norm: float = 1.0,
-    weight_decay: float = 0.01,
+    max_grad_norm: float = (1.0,)
+    weight_decay: float = (0.01,)
+
 
 # STATIC VARIABLES #
 
@@ -44,7 +45,7 @@ def _build_training_args(
     learning_rate,
     warmup_ratio,
     max_grad_norm,
-    weight_decay
+    weight_decay,
 ):
     return SentenceTransformerTrainingArguments(
         output_dir=output_dir,
@@ -56,29 +57,19 @@ def _build_training_args(
         weight_decay=weight_decay,
         bf16=True,
         eval_strategy="epoch",
-
-        save_strategy='steps',
+        save_strategy="steps",
         save_steps=500,
         save_total_limit=5,
-        logging_strategy='steps',
+        logging_strategy="steps",
         logging_steps=50,
-        report_to='none',
-
+        report_to="none",
         dataloader_num_workers=8,
-        dataloader_drop_last=True
+        dataloader_drop_last=True,
     )
 
 
-def _train_tsdae(
-    model,
-    train_dataset,
-    val_dataset,
-    config: TSDEATrainingConfig
-):
-    loss = DenoisingAutoEncoderLoss(
-        model,
-        tie_encoder_decoder=True
-        )
+def _train_tsdae(model, train_dataset, val_dataset, config: TSDEATrainingConfig):
+    loss = DenoisingAutoEncoderLoss(model, tie_encoder_decoder=True)
 
     args = _build_training_args(
         config.output_dir,
@@ -87,7 +78,7 @@ def _train_tsdae(
         config.learning_rate,
         config.warmup_ratio,
         config.max_grad_norm,
-        config.weight_decay
+        config.weight_decay,
     )
 
     trainer = SentenceTransformerTrainer(
@@ -105,7 +96,7 @@ def _train_tsdae(
 
     print(f"Training metrics: %s, {train_result.metrics}")
     print(f"Validation metrics: %s, {eval_metrics}")
-    print(f"Validation loss: %.6f,{eval_metrics['eval_loss']:.6}",)
+    print(f"Validation loss: %.6f,{eval_metrics['eval_loss']:.6f}")
     model.save_pretrained(config.output_dir)
     return model
 
@@ -118,11 +109,6 @@ def _train_model(input_dir, config):
 
     val_dataset = create_hf_dataset(val_df)
     # config = TSDEATrainingConfig(output_dir=output_dir)
-    model = _train_tsdae(
-        model,
-        train_dataset,
-        val_dataset,
-        config
-        )
+    model = _train_tsdae(model, train_dataset, val_dataset, config)
 
     return model
