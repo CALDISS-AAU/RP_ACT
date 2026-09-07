@@ -5,17 +5,17 @@ This script trains a TSDAE model on RP_ACT data on the message level.
 # IMPORTS #
 # External
 from dataclasses import dataclass
+
 import polars as pl
 from sentence_transformers.losses import DenoisingAutoEncoderLoss
 from sentence_transformers.trainer import SentenceTransformerTrainer
-from sentence_transformers.training_args import (
-    SentenceTransformerTrainingArguments)
+from sentence_transformers.training_args import SentenceTransformerTrainingArguments
 
 # Internal
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
+    create_hf_dataset,
     split_data,
-    create_hf_dataset
 )
 
 # Classes

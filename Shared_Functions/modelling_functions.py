@@ -1,11 +1,11 @@
 # IMPORTS #
 # External
+import nltk
 import polars as pl
 from datasets import Dataset
-from sentence_transformers import SentenceTransformer, models
 from polars_splitters import split_into_train_eval
+from sentence_transformers import SentenceTransformer, models
 
-import nltk
 nltk.download('punkt_tab')
 
 # Build model baseline

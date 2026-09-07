@@ -1,14 +1,11 @@
 """Main script for the Tsdae_Model pipeline."""
 # External
-import os
 import argparse
+import os
 from pathlib import Path
-# Internal imports
-from Functions.train_func import (
-    _train_model,
-    TSDEATrainingConfig
-)
 
+# Internal imports
+from Functions.train_func import TSDEATrainingConfig, _train_model
 
 REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
 
