@@ -22,7 +22,6 @@ from Shared_Functions.modelling_functions import (
     prepare_tsdae_data,
 )
 
-
 # Logging
 logging.basicConfig(
     level=logging.INFO,
