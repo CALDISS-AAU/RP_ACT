@@ -4,15 +4,16 @@
 # External
 import pandas as pd
 from Functions.sentence_extraction import (
-    _embed_sentences, _retrieve_top_sent
+    _prepare_seed_candidates,
+    _embed_sentences,
+    _retrieve_top_sent,
 )
 
 
-def main():
+def main(prepare_seeds=True):
     # Data
     document_path = (
-        "/work/RP_act/ACT/Data/Clean_Combine/"
-        "collapsed_messages_data.parquet"
+        "/work/RP_act/ACT/Data/Clean_Combine/collapsed_messages_data.parquet"
     )
 
     query_path = (
@@ -21,18 +22,21 @@ def main():
         "seed_sentences_marked.xlsx"
     )
 
+    collapsed = pd.read_parquet(document_path)
+
     # -----------------------------------------------------------------------------
     # * Seed sentence extraction. Only run this when in need of new seed candidates
     # -----------------------------------------------------------------------------
+    if prepare_seeds:
+        seed_candidates = _prepare_seed_candidates(
+            df=collapsed,
+            # contact_reasons=contact_reasons,
+            output_dir="/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Sentence_Pair/Data/seeds",
+        )
 
-    # seed_candidates =_prepare_seed_candidates(
-    #     df=collapsed,
-    #     contact_reasons=contact_reasons,
-    #     output_dir="/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Sentence_Pair/Data/seeds",
-    # )
-
-    # print(seed_candidates["seed_tag"].value_counts())
-    # print(f"Total seed candidates: {len(seed_candidates)}")
+        print(seed_candidates["seed_tag"].value_counts())
+        print(f"Total seed candidates: {len(seed_candidates)}")
+        return
 
     # ------------------------------------
     # * Normal pipeline
@@ -53,17 +57,20 @@ def main():
         seed_df=seed_df,
         corpus_embeddings=corpus_embeddings,
         query_embeddings=query_embeddings,
-        top_k=250,
+        top_k=200,
     )
 
     print(results_df.shape)
     results_df = results_df[results_df["score"] < 1.0]
-    
+
     # datetimes sux
-    for col in results_df.select_dtypes(include=['datetimetz']).columns:
+    for col in results_df.select_dtypes(include=["datetimetz"]).columns:
         results_df[col] = results_df[col].dt.tz_localize(None)
 
-    results_df.to_excel('/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Sentence_Pair/Data/seeds/seed_topk_results.xlsx')
+    results_df.to_excel(
+        "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Sentence_Pair/Data/seeds/seed_topk_results.xlsx"
+    )
+
 
 if __name__ == "__main__":
     main()

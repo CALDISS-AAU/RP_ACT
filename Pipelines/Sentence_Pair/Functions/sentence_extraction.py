@@ -39,41 +39,41 @@ Base model vs TSDAE model
 """
 
 """
-Seed
-  ↓
-TSDAE embedding
-  ↓
-Cosine similarity against corpus
-  ↓
-Retrieve e.g. top 200
-  ↓
-Remove:
-  • exact duplicates
-  • near-duplicates
-  • seed itself
-  ↓
-Sample across similarity/rank ranges
-  ↓
-Candidate pairs
+All relevant contact-reason tags
+        ↓
+select diverse seed sentences
+        ↓
+TSDAE retrieval across corpus
+        ↓
+candidate sentence pairs
+        ↓
+human / framework-based labeling
+        ↓
+split into:
+    train
+    validation
+    test
+        ↓
+supervised contrastive / pairwise fine-tuning
+        ↓
+final evaluation on untouched test set
 """
 
-contact_reasons = [
-    "kroppens udseende og udvikling",
-    "forældres krav og forventninger",
-    "religion/kultur",
-    "ensomhed",
-    "trivsel i klassen/skolen",
-    "flirt/forelskelse",
-    "faglige problemer/lektier",
-    "stress/præstationsangst",
-    "gaming",
-    "brug af alkohol",
-]
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def _prepare_seed_candidates(df, contact_reasons, output_dir):
+def _prepare_seed_candidates(df, output_dir):
+    contact_reasons = (
+        df['contact_reasons']
+        .explode()
+        .dropna()
+        .unique()
+        .tolist()
+        )
+    
+    print(f"Number of contact reasons: {len(contact_reasons)}")
+
     df_exploded = df.explode("contact_reasons").copy()
 
     df_reasons = df_exploded[
