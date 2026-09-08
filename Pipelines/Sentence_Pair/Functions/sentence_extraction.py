@@ -72,27 +72,23 @@ contact_reasons = [
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-def _prepare_seed_candidates(df, contact_reasons, output_dir):
-   df_exploded = df.explode("contact_reasons").copy()
 
-   df_reasons = df_exploded[
+def _prepare_seed_candidates(df, contact_reasons, output_dir):
+    df_exploded = df.explode("contact_reasons").copy()
+
+    df_reasons = df_exploded[
         df_exploded["contact_reasons"].isin(contact_reasons)
     ].copy()
 
-   df_reasons = df_reasons[
-        df_reasons["is_incoming"]
-    ].copy()
+    df_reasons = df_reasons[df_reasons["is_incoming"]].copy()
 
-   candidate_pools = []
-   
-   for tag in contact_reasons:
-        tagged_messages = df_reasons[
-            df_reasons["contact_reasons"] == tag
-        ]
+    candidate_pools = []
+
+    for tag in contact_reasons:
+        tagged_messages = df_reasons[df_reasons["contact_reasons"] == tag]
 
         sampled = tagged_messages.sample(
-            n=min(150, len(tagged_messages)),
-            random_state=55
+            n=min(150, len(tagged_messages)), random_state=55
         ).copy()
 
         # Makes explicit which tag this sentence was sampled for
@@ -100,56 +96,63 @@ def _prepare_seed_candidates(df, contact_reasons, output_dir):
 
         candidate_pools.append(sampled)
 
-        seed_candidates = pd.concat(
-            candidate_pools,
-            ignore_index=True
-        )
+        seed_candidates = pd.concat(candidate_pools, ignore_index=True)
 
-   for col in seed_candidates.select_dtypes(include=["datetimetz"]).columns:
+    for col in seed_candidates.select_dtypes(include=["datetimetz"]).columns:
         seed_candidates[col] = seed_candidates[col].dt.tz_localize(None)
-    
-   seed_candidates['selected_seed'] = ''
 
-   seed_candidates.to_excel(f"{output_dir}/seed_sentences.xlsx", index=False)
+    seed_candidates["selected_seed"] = ""
 
-   return seed_candidates
+    seed_candidates.to_excel(f"{output_dir}/seed_sentences.xlsx", index=False)
+
+    return seed_candidates
 
 
 def _embed_sentences(
     document_path,
     query_path,
-    text_column,
+    text_column='msg_tekst',
     batch_size=64,
-    model_name: str = '/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-Collapsed-v2'
+    model_name="/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-Collapsed-v2",
 ):
-    model = SentenceTransformer(model_name, device=device, similarity_fn_name=SimilarityFunction.DOT_PRODUCT)
-    
-    
-    
-    # Corpus
-    corpus = pd.read_parquet(document_path).copy()
-
-    corpus_df = (
-    pd.read_parquet(document_path)
-    .dropna(subset=[text_column])
-    .copy()
+    model = SentenceTransformer(
+        model_name,
+        device=device,
+        similarity_fn_name=SimilarityFunction.DOT_PRODUCT
     )
 
-    corpus_df[text_column] = (corpus_df[text_column].astype(str).str.strip())
+    # Corpus
+    corpus_df = (
+        pd.read_parquet(document_path)
+        .dropna(subset=[text_column])
+        .copy()
+    )
 
-    corpus_df = corpus_df[corpus_df[text_column] != ""].reset_index(drop=True)
+    corpus_df[text_column] = (
+        corpus_df[text_column]
+        .astype(str)
+        .str.strip()
+    )
 
+    corpus_df = (
+        corpus_df[corpus_df[text_column] != ""]
+        .reset_index(drop=True)
+    )
+    print(corpus_df.columns.tolist())
+    print("text_column:", repr(text_column))
     corpus = corpus_df[text_column].tolist()
 
     # Seeds
-    seed_sentences = pd.read_excel(query_path)
-    
-    queries = seed_sentences[
-    seed_sentences["selected_seed"] == True
-    ].copy()
+    seed_df = pd.read_excel(query_path)
 
-    queries = queries["text"].tolist()
-    
+    seed_df = (
+        seed_df[seed_df["selected_seed"] == True]
+        .copy()
+        .reset_index(drop=True)
+    )
+
+    queries = seed_df[text_column].tolist()
+
     # Embeddings
     corpus_embeddings = model.encode_document(
         corpus,
@@ -164,28 +167,50 @@ def _embed_sentences(
         batch_size=batch_size,
         show_progress_bar=True,
         convert_to_tensor=True,
-        normalize_embeddings=True
+        normalize_embeddings=True,
+    )
+
+    return (
+        corpus_embeddings,
+        query_embeddings,
+        corpus_df,
+        seed_df,
     )
 
 
-    return corpus_embeddings, query_embeddings, corpus, seed_sentences
-
 def _retrieve_top_sent(
-        corpus_embeddings,
+    corpus_df,
+    seed_df,
+    corpus_embeddings,
+    query_embeddings,
+    top_k=250,
+):
+    hits = util.semantic_search(
         query_embeddings,
-        output_dir,
-        model_name: str,
-        top_k: int = 200
-        ):
+        corpus_embeddings,
+        top_k=top_k,
+    )
 
-        hits = util.semantic_search(
-                query_embeddings,
-                corpus_embeddings,
-                top_k=top_k
-        )
+    results = []
 
-        corpus_id = hits[0][0]['corpus_id']
+    for query_id, query_hits in enumerate(hits):
+        seed_row = seed_df.iloc[query_id]
 
-        matched_row = corpus_df.iloc(corpus_id)
+        for hit in query_hits:
+            corpus_id = hit["corpus_id"]
+            corpus_row = corpus_df.iloc[corpus_id]
 
-        
+            results.append(
+                {
+                    "query_id": query_id,
+                    "corpus_id": corpus_id,
+                    "score": hit["score"],
+                    "seed_text": seed_row["msg_tekst"],
+                    "seed_tag": seed_row["seed_tag"],
+                    **corpus_row.to_dict(),
+                }
+            )
+
+    results_df = pd.DataFrame(results)
+
+    return results_df, hits
