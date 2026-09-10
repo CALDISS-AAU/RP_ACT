@@ -1,5 +1,5 @@
 from pathlib import Path
-import numpy as np
+
 import pandas as pd
 import torch
 from sentence_transformers import (
@@ -7,7 +7,6 @@ from sentence_transformers import (
     SimilarityFunction,
     util,
 )
-
 
 """
 Selected well-being-related tags
@@ -67,7 +66,6 @@ def _prepare_seed_candidates(df, output_dir):
     contact_reasons = (
         df['contact_reasons']
         .explode()
-        .dropna()
         .unique()
         .tolist()
         )
@@ -80,7 +78,7 @@ def _prepare_seed_candidates(df, output_dir):
         df_exploded["contact_reasons"].isin(contact_reasons)
     ].copy()
 
-    df_reasons = df_reasons[df_reasons["is_incoming"]].copy()
+    df_reasons = df_reasons[df_reasons["is_incoming"] == True].copy()
 
     candidate_pools = []
 
@@ -127,6 +125,8 @@ def _embed_sentences(
         .dropna(subset=[text_column])
         .copy()
     )
+    # Counselors get out
+    corpus_df = corpus_df[corpus_df["is_incoming"] == True].copy()
 
     corpus_df[text_column] = (
         corpus_df[text_column]
@@ -191,6 +191,7 @@ def _retrieve_top_sent(
         top_k=top_k,
     )
 
+
     results = []
 
     for query_id, query_hits in enumerate(hits):
@@ -199,6 +200,10 @@ def _retrieve_top_sent(
         for hit in query_hits:
             corpus_id = hit["corpus_id"]
             corpus_row = corpus_df.iloc[corpus_id]
+
+            # Skip messages from the same conversation
+            if corpus_row['conversation_id'] == seed_row['conversation_id']:
+                continue
 
             results.append(
                 {
