@@ -8,9 +8,30 @@ from polars_splitters import split_into_train_eval
 import nltk
 nltk.download('punkt_tab')
 
+
+def calc_embeddings(
+    df: pd.DataFrame,
+    model_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-messagelvl",
+    normalize_embeddings: bool = True,
+):
+    model = SentenceTransformer(model_path, local_files_only=True)
+
+    embeddings = model.encode(
+        df["msg_tekst"].tolist(),
+        normalize_embeddings=False,
+        show_progress_bar=True,
+    )
+
+    # Save as Numpy array
+    np.save("/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Data/msg_lvl_embeddings.npy", embeddings)
+
+    # Save as FAISS because why not?
+    index = faiss.IndexFlatIP(embeddings.shape[1])
+    index.add(embeddings)
+
+    faiss.write_index(index, "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Data/msg_lvl_embeddings.faiss")
+
 # Build model baseline
-
-
 def build_sentence_transformer(
     model_name: str = "BAAI/bge-m3",
     max_seq_length: int = 128,

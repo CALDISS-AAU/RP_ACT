@@ -1,6 +1,8 @@
 # External packages
 from pathlib import Path
 import pandas as pd
+import faiss
+import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -8,7 +10,9 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix, balanced_accuracy_score
 
 
-def _prep_data(df: pd.DataFrame):
+def _prep_data(
+    df: pd.DataFrame,
+    ):
     gender_map = {
         "Pige": "female",
         "Ung kvinde": "female",
@@ -29,27 +33,35 @@ def _prep_data(df: pd.DataFrame):
 
 def _logistic_regression(
     df: pd.DataFrame,
-    model_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-messagelvl",
-    normalize_embeddings: bool = True,
+    embedding_path: str = ''
 ):
-    model = SentenceTransformer(model_path, local_files_only=True)
 
-    X = model.encode(
-        df["msg_tekst"].tolist(),
-        normalize_embeddings=normalize_embeddings,
-        show_progress_bar=True,
-    )
+    X = np.load(embedding_path)
     y = df["gender_clean"]
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, stratify=y, random_state=1998
     )
-    clf = LogisticRegression(max_iter=1000, class_weight="balanced")
+    clf = LogisticRegression(max_iter=1000, class_weight='balanced')
     clf.fit(X_train, y_train)
 
     preds = clf.predict(X_test)
 
     report = classification_report(y_test, preds, output_dict=True)
+
+    cm = confusion_matrix(
+    y_test,
+    preds,
+    labels=clf.classes_
+    )
+
+    cm = pd.DataFrame(
+        cm,
+        index=clf.classes_,
+        columns=clf.classes_
+    )
+
+    print(cm)
 
     return clf, report
 
