@@ -1,6 +1,10 @@
 # IMPORTS #
 # External
+from pathlib import Path
+import numpy as np
+import faiss
 import polars as pl
+import pandas as pd
 from datasets import Dataset
 from sentence_transformers import SentenceTransformer, models
 from polars_splitters import split_into_train_eval
@@ -10,26 +14,35 @@ nltk.download('punkt_tab')
 
 
 def calc_embeddings(
-    df: pd.DataFrame,
+    data_path: str = '/work/RP_act/ACT/Data/Clean_Combine/message_data.parquet',
     model_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-messagelvl",
+    output_path: str = "/work/RP_act/ACT/Data/embeddings",
+    filename: str = "msg_lvl_embeddings",
     normalize_embeddings: bool = True,
 ):
+    output_path = Path(output_path)
+
+    df = pd.read_parquet(data_path)
+
     model = SentenceTransformer(model_path, local_files_only=True)
 
     embeddings = model.encode(
         df["msg_tekst"].tolist(),
-        normalize_embeddings=False,
+        normalize_embeddings=normalize_embeddings,
         show_progress_bar=True,
-    )
+    ).astype('float32')
 
     # Save as Numpy array
-    np.save("/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Data/msg_lvl_embeddings.npy", embeddings)
+    np.save(output_path / f"{filename}.npy", embeddings)
 
     # Save as FAISS because why not?
     index = faiss.IndexFlatIP(embeddings.shape[1])
     index.add(embeddings)
 
-    faiss.write_index(index, "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Data/msg_lvl_embeddings.faiss")
+    faiss.write_index(
+    index,
+    str(output_path / f"{filename}.faiss")
+)
 
 # Build model baseline
 def build_sentence_transformer(
