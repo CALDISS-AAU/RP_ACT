@@ -1,13 +1,18 @@
 # External packages
+import os
 from pathlib import Path
-import pandas as pd
+
 import faiss
+import matplotlib.pyplot as plt
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    classification_report,
+    confusion_matrix,
+)
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix, balanced_accuracy_score
 
 
 def _prep_data(
@@ -26,18 +31,23 @@ def _prep_data(
 
     df["gender_clean"] = df["requester_gender_name"].map(gender_map)
 
-    df_model = df[df["gender_clean"].isin(["female", "male", "other"])].copy()
+    df_model = df[df["gender_clean"].isin(["female", "male"])].copy()
 
     return df_model
 
 
 def _logistic_regression(
     df: pd.DataFrame,
-    embedding_path: str = ''
+    embedding_path: str = '/work/RP_act/ACT/Data/embeddings/collapsed_normalised.npy',
+    output_path: str = "/work/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
+    filename: str = "Confusion_matrix"
 ):
+    output_path = Path(output_path)
+    output_path.mkdir(parents=True, exist_ok=True)
+    embeddings = np.load(embedding_path)
 
-    X = np.load(embedding_path)
-    y = df["gender_clean"]
+    X = embeddings[df.index.to_numpy()]
+    y = df["gender_clean"].to_numpy()
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, stratify=y, random_state=1998
@@ -47,7 +57,7 @@ def _logistic_regression(
 
     preds = clf.predict(X_test)
 
-    report = classification_report(y_test, preds, output_dict=True)
+    report = classification_report(y_test, preds, output_dict=True, zero_division=0)
 
     cm = confusion_matrix(
     y_test,
@@ -55,13 +65,29 @@ def _logistic_regression(
     labels=clf.classes_
     )
 
-    cm = pd.DataFrame(
+    cm_df = pd.DataFrame(
         cm,
         index=clf.classes_,
         columns=clf.classes_
     )
+    print(cm_df)
 
-    print(cm)
+    disp = ConfusionMatrixDisplay(
+    confusion_matrix=cm,
+    display_labels=clf.classes_,
+    )
+
+    disp.plot()
+    plt.title("Confusion Matrix")
+    plt.tight_layout()
+    
+    plt.savefig(
+    output_path / f"{filename}.png",
+    dpi=300,
+    bbox_inches="tight",
+    )
+
+    plt.close()
 
     return clf, report
 
@@ -69,10 +95,11 @@ def _logistic_regression(
 def _create_report(
     report,
     filename: str = "clf_report.xlsx",
-    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
+    output_path: str = "/work/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
 ):
 
     output_path = Path(output_path)
+    output_path.mkdir(parents=True, exist_ok=True)
 
     report_df = pd.DataFrame(report).T
     report_df.to_excel(output_path / filename)
