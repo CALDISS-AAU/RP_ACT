@@ -1,26 +1,54 @@
 """Main script for the Tsdae_Model pipeline."""
+
+# External
+import os
+import argparse
+from pathlib import Path
+
 # Internal imports
-from Functions.train_func import (
-    _train_tsdae,
-    _train_message_model
-)
+from Functions.train_func import _train_model, TSDEATrainingConfig
 
-from Shared_Functions.modelling_functions import (
-    build_sentence_transformer,
-    split_data,
-    create_hf_dataset,
-    prepare_tsdae_data
-)
 
-# Directories
-INPUT_DIR_DATA = "/work/RP_act/ACT/Data/clean_combine/message_data.parquet"
-OUTPUT_DIR_LOG_TRAIN = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/Logs/trainer.log"
-OUTPUT_DIR_MODEL = '/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/ACT_messagelvl_embed'
+REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
+
 
 def main():
-    train_message_model(input_dir=INPUT_DIR_DATA, output_dir=OUTPUT_DIR_MODEL, log=OUTPUT_DIR_LOG_TRAIN)
+    parser = argparse.ArgumentParser(description="Train TSDAE model")
+    parser.add_argument(
+        "--data-path", required=True, help="Path to input .parquet file"
+    )
+    parser.add_argument(
+        "--output-dir-logs",
+        default=str(REPO_ROOT / "Pipelines" / "TSDAE_Model" / "Logs"),
+        help="Directory for storing training logs",
+    )
+    parser.add_argument(
+        "--output-dir-model",
+        default=str(REPO_ROOT / "Pipelines" / "TSDAE_Model" / "modelling"),
+        help="Directory for storing trained models",
+    )
+    # Config parse
+    parser.add_argument("--epochs", type=int, default=5)
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--lr", type=float, default=2e-5)
+    parser.add_argument("--warmup-ratio", type=float, default=0.1)
+    parser.add_argument("--max-grad-norm", type=float, default=1.0)
+    parser.add_argument("--weight-decay", type=float, default=0.01)
+
+    args = parser.parse_args()
+
+    config = TSDEATrainingConfig(
+        output_dir=args.output_dir_model,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        learning_rate=args.lr,
+        warmup_ratio=args.warmup_ratio,
+        max_grad_norm=args.max_grad_norm,
+        weight_decay=args.weight_decay,
+    )
+
+    _train_model(input_dir=args.data_path, config=config)
 
 
 if __name__ == "__main__":
     main()
-

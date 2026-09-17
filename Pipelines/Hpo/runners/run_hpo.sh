@@ -1,16 +1,38 @@
 #!/bin/bash
-source /work/MatiasKokholmAppel#3073/RP_ACT/.venv/bin/activate
+set -euo pipefail
 
-cd /work/MatiasKokholmAppel#3073/RP_ACT || exit 1
-export PYTHONPATH="/work/MatiasKokholmAppel#3073/RP_ACT:$PYTHONPATH"
+cd "/work/MatiasKokholmAppel#3073/RP_ACT" || exit 1
+source ".venv/bin/activate"
 
-LOG_DIR="/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/Logs"
-mkdir -p "$LOG_DIR"
-LOGFILE="$LOG_DIR/hpo_$(date +%Y%m%d_%H%M%S).log"
+export PYTHONPATH="/work/MatiasKokholmAppel#3073/RP_ACT:${PYTHONPATH:-}"
 
-uv run --active accelerate launch \
-  --num_processes=1 \
-  --mixed_precision=bf16 \
-  --dynamo_backend=no \
-  Pipelines/Hpo/hpo_main.py \
-  2>&1 | tee "$LOGFILE"
+LOG_DIR="/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/message_level_hpo/Logs"
+# LOGFILE="$LOG_DIR/hpo_$(date +%Y%m%d_%H%M%S).log"
+OUTPUT_DIR="/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/output"
+DATA_PATH="/work/RP_act/ACT/Data/Clean_Combine/collapsed_messages_data.parquet"
+
+mkdir -p "$LOG_DIR" "$OUTPUT_DIR"
+
+TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
+LOGFILE_GPU0="$LOG_DIR/hpo_gpu0_${TIMESTAMP}.log"
+LOGFILE_GPU1="$LOG_DIR/hpo_gpu1_${TIMESTAMP}.log"
+
+CUDA_VISIBLE_DEVICES=0 uv run Pipelines/Hpo/hpo_main.py \
+  --data-path "/work/RP_act/ACT/Data/Clean_Combine/message_data.parquet" \
+  --output-dir-logs "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/message_level_hpo/Logs" \
+  --output-trial-dir "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/output" \
+  2>&1 | tee "$LOGFILE_GPU0" &
+
+PID_GPU0=$!
+
+CUDA_VISIBLE_DEVICES=1 uv run Pipelines/Hpo/hpo_main.py \
+  --data-path "/work/RP_act/ACT/Data/Clean_Combine/message_data.parquet" \
+  --output-dir-logs "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/message_level_hpo/Logs" \
+  --output-trial-dir "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Hpo/output" \
+  2>&1 | tee "$LOGFILE_GPU1" &
+
+PID_GPU1=$!
+
+
+wait "$PID_GPU0"
+wait "$PID_GPU1"

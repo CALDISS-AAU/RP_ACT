@@ -8,11 +8,19 @@ wheels/
 
 # Virtual environments
 .venv
+uv.lock
 
 # Data directories
-Data
-Output
-Pipelines/*/Data
+Data/*
+Output/*
+Pipelines/*/Data/*
+Pipelines/*/modelling/*
 
 # Logs
-Pipelines/*/Logs
+Pipelines/*/Logs/*
+
+# uv
+.lock
+
+# Keep .gitkeep
+!.gitkeep
