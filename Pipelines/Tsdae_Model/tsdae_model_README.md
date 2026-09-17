@@ -1,6 +1,6 @@
 # Tsdae_Model README
 
-This pipeline trains a sentence embedding model using **TSDAE** (Transformer-based Sequential Denoising Autoencoder) on message-level text data.
+This pipeline trains a sentence embedding model using **TSDAE** (Transformer-based Sequential Denoising Autoencoder).
 
 ## Overview
 
@@ -38,8 +38,6 @@ The pipeline expects a cleaned Parquet dataset at:
 ```text
 /ACT/Data/clean_combine/message_data.parquet
 ```
-
-The dataset should contain message-level text data for this pipeline.
 
 ## Pre-processing
 
@@ -147,7 +145,7 @@ The entry point calls:
 main()
 ```
 
-which trains the message-level embedding model using the configured input, output, and logging paths.
+which trains the TSDAE embedding model using the configured input, output, and logging paths.
 
 ## Configuration
 
