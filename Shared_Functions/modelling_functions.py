@@ -58,12 +58,10 @@ def split_data(
 def create_hf_dataset(df: pl.DataFrame, text_column: str = "msg_tekst") -> Dataset:
 
     texts = df[text_column].to_list()
-    return Dataset.from_dict(
-        {
-            "source": texts,
-            "target": texts,
-        }
-    )
+    return Dataset.from_dict({
+        "source": texts,
+        "target": texts,
+    })
 
 
 def prepare_tsdae_data(input_dir):
