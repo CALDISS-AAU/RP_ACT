@@ -5,7 +5,7 @@
        and rebuilds the full pipeline log.
 
    Run from the ACT folder with:
-       python -m Pipelines.Conversation_Extraction.conversation_extraction_main
+       uv run python -m Pipelines.Conversation_Extraction.conversation_extraction_main
 """
 
 ## IMPORTS ##
@@ -18,13 +18,13 @@ from .Functions.extract_stratified_conversations import export_stratified_conver
 
 ## STATIC VARIABLES ##
 # Directories - input
-INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/clean_combine/conversation_data.parquet"
+INPUT_DIR_CONVERSATIONS = "./Data/Clean_Combine/conversation_data.parquet"
 
 # Directories - internal output
 OUTPUT_DIR_DATA_INVESTIGATION_PNGS = "Pipelines/Conversation_Extraction/Data/pngs"
 
 # Directories - global output
-OUTPUT_DIR_BASE = "/work/ACT/Output/Conversation_Extraction"
+OUTPUT_DIR_BASE = "./Output/Conversation_Extraction"
 OUTPUT_DIR_FINAL_DATA_INVESTIGATION = f"{OUTPUT_DIR_BASE}/data_investiogation_stats.docx"
 OUTPUT_DIR_CONVERSATION_EXAMPLES = f"{OUTPUT_DIR_BASE}/Conversation_Examples"
 OUTPUT_DIR_STRATIFIED_CONVERSATIONS = f"{OUTPUT_DIR_BASE}/Stratified_Conversations"

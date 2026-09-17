@@ -1,7 +1,8 @@
 """Add derived variables to cleaned ACT data. 
    The module reads cleaned message data and contact-reason data, 
        adds age groups, time features, text features, seasons, 
-       and merged contact reasons, then exports the enriched dataset as parquet. 
+       merged contact reasons and merged contact topics, 
+       then exports the enriched dataset as parquet. 
 """
 
 ## IMPORTS ##
@@ -158,6 +159,15 @@ def _merge_topic_row(row: dict) -> list[str]:
 
     return topics
 
+def _merge_topic_names_row(row: dict) -> list[str]:
+    """Collect topic column names where the row has a value."""
+
+    return [
+        col
+        for col, value in row.items()
+        if value is not None
+    ]
+
 def _merge_topics(
     dataframe: pl.DataFrame, 
     logger: logging.Logger
@@ -175,7 +185,14 @@ def _merge_topics(
             _merge_topic_row,
             return_dtype=pl.List(pl.String),
         )
-        .alias("contact_reasons")
+        .alias("contact_reasons"),
+
+        pl.struct(topic_cols)
+        .map_elements(
+            _merge_topic_names_row,
+            return_dtype=pl.List(pl.String),
+        )
+        .alias("contact_topics"),
     )
     
     logger.info("All topics from the following columns have been merged:")
@@ -188,14 +205,15 @@ def _add_contact_reason(
     dataframe_contact_reason: pl.DataFrame, 
     logger: logging.Logger
 ) -> pl.DataFrame:
-    """Add merged contact reasons to the dataframe."""
+    """Add merged contact reasons and the overall topic to the dataframe."""
 
     dataframe_contact_reason = _merge_topics(dataframe_contact_reason, logger)
 
     dataframe_data = dataframe_data.join(
         dataframe_contact_reason.select([
             "conversation_code", 
-            "contact_reasons"
+            "contact_reasons",
+            "contact_topics"
         ]),
         on="conversation_code",
         how="left"
@@ -274,5 +292,8 @@ def add_variables(
     logger.info("_____________________________________________________")
     logger.info("")
 
-    df.write_parquet(output_dir_data)
+    output_path = Path(output_dir_data)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    df.write_parquet(output_path)
 ## __________________ ##
