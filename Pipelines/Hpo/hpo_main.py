@@ -2,10 +2,17 @@
 import argparse
 import os
 from pathlib import Path
-
-from Functions.hpo_func import _run_tsdae_hpo
-
 # Internal imports
+from Shared_Functions.modelling_functions import (
+    build_sentence_transformer,
+    prepare_tsdae_data
+)
+
+from Functions.hpo_func import (
+    _hpo_loss_init,
+    _hpo_compute_objective,
+    _run_tsdae_hpo
+)
 
 REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
 
