@@ -8,11 +8,13 @@ wheels/
 
 # Virtual environments
 .venv
+uv.lock
 
 # Data directories
 Data/*
 Output/*
 Pipelines/*/Data/*
+Pipelines/*/modelling/*
 
 # Logs
 Pipelines/*/Logs/*

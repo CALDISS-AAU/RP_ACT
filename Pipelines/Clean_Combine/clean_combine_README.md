@@ -86,6 +86,7 @@ The feature engineering step adds:
 * Seasonal categories.
 * Text length features.
 * Contact reasons.
+* Contact topics.
 
 The enriched dataset is exported as parquet.
 
