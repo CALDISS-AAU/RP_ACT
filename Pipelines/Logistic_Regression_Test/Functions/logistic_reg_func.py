@@ -91,6 +91,15 @@ def _logistic_regression(
 
     return clf, report
 
+def _LR_age(
+    df: pd.DataFrame,
+    embedding_path: str = '/work/RP_act/ACT/Data/embeddings/collapsed_normalised.npy',
+    output_path: str = "/work/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
+    filename: str = "Confusion_matrix"
+):
+    results = 4 + 4
+
+    return results
 
 def _create_report(
     report,
