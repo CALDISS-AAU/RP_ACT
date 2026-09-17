@@ -146,15 +146,9 @@ def _run_tsdae_hpo(
     log.info("HPO log directory: %s", log_path)
     log.info("Optuna journal: %s", journal_path)
 
-    train_dataset, val_dataset, _ = prepare_tsdae_data(
-        input_path
-    )
+    train_dataset, val_dataset, _ = prepare_tsdae_data(input_path)
 
-    storage = JournalStorage(
-        JournalFileBackend(
-            str(journal_path)
-        )
-    )
+    storage = JournalStorage(JournalFileBackend(str(journal_path)))
 
     study = optuna.create_study(
         study_name="tsdae_hpo",
@@ -172,9 +166,7 @@ def _run_tsdae_hpo(
     def objective(trial):
         params = _hpo_search_space(trial)
 
-        trial_output_path = (
-            output_path / f"trial_{trial.number}"
-        )
+        trial_output_path = output_path / f"trial_{trial.number}"
 
         trial_output_path.mkdir(
             parents=True,
@@ -197,26 +189,12 @@ def _run_tsdae_hpo(
 
             training_args = SentenceTransformerTrainingArguments(
                 output_dir=str(trial_output_path),
-
-                num_train_epochs=params[
-                    "num_train_epochs"
-                ],
-                per_device_train_batch_size=params[
-                    "per_device_train_batch_size"
-                ],
-                learning_rate=params[
-                    "learning_rate"
-                ],
-                warmup_ratio=params[
-                    "warmup_ratio"
-                ],
-                weight_decay=params[
-                    "weight_decay"
-                ],
-                max_grad_norm=params[
-                    "max_grad_norm"
-                ],
-
+                num_train_epochs=params["num_train_epochs"],
+                per_device_train_batch_size=params["per_device_train_batch_size"],
+                learning_rate=params["learning_rate"],
+                warmup_ratio=params["warmup_ratio"],
+                weight_decay=params["weight_decay"],
+                max_grad_norm=params["max_grad_norm"],
                 bf16=True,
                 eval_strategy="epoch",
                 save_strategy="no",
@@ -239,9 +217,7 @@ def _run_tsdae_hpo(
 
             metrics = trainer.evaluate()
 
-            objective_value = _hpo_compute_objective(
-                metrics
-            )
+            objective_value = _hpo_compute_objective(metrics)
 
             log.info(
                 "Finished Optuna trial %d with eval_loss=%.6f",
@@ -257,9 +233,7 @@ def _run_tsdae_hpo(
                 trial.number,
             )
 
-            raise optuna.TrialPruned(
-                "CUDA out-of-memory"
-            ) from error
+            raise optuna.TrialPruned("CUDA out-of-memory") from error
 
         finally:
             if trainer is not None:
