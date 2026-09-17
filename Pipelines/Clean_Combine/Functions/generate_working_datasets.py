@@ -33,6 +33,16 @@ def _find_random_conversation_code(
     logger.info(f"For validation the conversation {conversation_code} has been randomly chosen.")
     return conversation_code
 
+def _remove_advisers(
+    df: pl.DataFrame,
+    logger: logging.Logger
+) -> pl.DataFrame:
+    """Remove advisor messages from dataframe"""
+    df_without_advisor_msgs = df.filter(
+        pl.col('is_incoming') == True
+    )
+    return df_without_advisor_msgs
+
 def _data_preview(
     dataframe: pl.DataFrame,
     logger: logging.Logger,
@@ -144,8 +154,7 @@ def _combine_conversations(
 ## MAIN FUNCTIONALITY ##
 def generate_working_datasets(
     input_dir_data: str,
-    output_dir_collapsed_messages_data: str,
-    output_dir_conversation_data: str,
+    output_dir_folder: str,
     logger: logging.Logger,
     separator: str,
 ) -> None:
@@ -169,17 +178,35 @@ def generate_working_datasets(
     """
     df = pl.read_parquet(input_dir_data)
     random_conversation = _find_random_conversation_code(df, logger, 20)
-
     _data_preview(df, logger, random_conversation)
+
+    df_without_advisor_msgs = _remove_advisers(df, logger)
+    _data_preview(df_without_advisor_msgs, logger, random_conversation)
+    output_dir_messages_without_advisors = f"{output_dir_folder}message_data_without_advisors.parquet"
+    df_without_advisor_msgs.write_parquet(output_dir_messages_without_advisors)
 
     df_collapsed_messages = _collapse_messages(df, logger, separator)
     _data_preview(df_collapsed_messages, logger, random_conversation)
+    output_dir_collapsed_messages = f"{output_dir_folder}collapsed_massages_data.parquet"
+    df_collapsed_messages.write_parquet(output_dir_collapsed_messages)
+
+    df_collapsed_messages_without_advisor = _collapse_messages(df_without_advisor_msgs, logger, separator)
+    _data_preview(df_collapsed_messages_without_advisor, logger, random_conversation)
+    output_dir_collapsed_messages_without_advisors = f"{output_dir_folder}collapsed_messages_data_without_advisors.parquet"
+    df_collapsed_messages_without_advisor.write_parquet(output_dir_collapsed_messages_without_advisors)
 
     df_conversations = _combine_conversations(df, logger, separator)
     _data_preview(df_conversations, logger, random_conversation)
+    output_dir_conversations = f"{output_dir_folder}conversation_data.parquet"
+    df_conversations.write_parquet(output_dir_conversations)
 
-    df_collapsed_messages.write_parquet(output_dir_collapsed_messages_data)
-    df_conversations.write_parquet(output_dir_conversation_data)
+    df_conversations_without_advisor = _combine_conversations(df_without_advisor_msgs, logger, separator)
+    _data_preview(df_conversations_without_advisor, logger, random_conversation)
+    output_dir_conversations_without_advisor = f"{output_dir_folder}conversation_data_without_advisors.parquet"
+    df_conversations_without_advisor.write_parquet(output_dir_conversations_without_advisor)
+
+    # df_collapsed_messages.write_parquet(output_dir_collapsed_messages_data)
+    # df_conversations.write_parquet(output_dir_conversation_data)
 
     
 ## __________________ ##

@@ -20,16 +20,18 @@ from .Functions.add_variables import add_variables
 
 ## STATIC VARIABLES ##
 # Directories - input
-INPUT_DIR_CONVERSATIONS = "/work/ACT/Data/raw/samtaler"
-INPUT_DIR_CONTACT_REASONS = "/work/ACT/Data/raw/emner"
+INPUT_DIR_CONVERSATIONS = "/work/RP_act/ACT/Data/raw/samtaler"
+INPUT_DIR_CONTACT_REASONS = "/work/RP_act/ACT/Data/raw/emner"
 
 # Directories - internal output
 OUTPUT_DIR_MESSAGE_DATA = "Pipelines/Clean_Combine/Data/message_data.parquet" 
-OUTPUT_DIR_COLLAPSED_MESSAGES_DATA = "Pipelines/Clean_Combine/Data/collapsed_messages_data.parquet" 
-OUTPUT_DIR_CONVERSATION_DATA = "Pipelines/Clean_Combine/Data/conversation_data.parquet"
+OUTPUT_DIR_FOLDER = "Pipelines/Clean_Combine/Data/"
+# OUTPUT_DIR_COLLAPSED_MESSAGES_DATA = "Pipelines/Clean_Combine/Data/collapsed_messages_data.parquet" 
+# OUTPUT_DIR_CONVERSATION_DATA = "Pipelines/Clean_Combine/Data/conversation_data.parquet"
 
 # Directories - global output
 OUTPUT_DIR_FINAL_MESSAGE_DATA = "./Data/Clean_Combine/message_data.parquet"
+OUTPUT_DIR_FINAL_FOLDER = "./Data/Clean_Combine/"
 OUTPUT_DIR_FINAL_COLLAPSED_MESSAGES_DATA = "./Data/Clean_Combine/collapsed_messages_data.parquet"
 OUTPUT_DIR_FINAL_CONVERSATION_DATA = "./Data/Clean_Combine/conversation_data.parquet"
 
@@ -100,8 +102,7 @@ def main() -> None:
 
     generate_working_datasets(
         input_dir_data=OUTPUT_DIR_MESSAGE_DATA,
-        output_dir_collapsed_messages_data=OUTPUT_DIR_COLLAPSED_MESSAGES_DATA,
-        output_dir_conversation_data=OUTPUT_DIR_CONVERSATION_DATA,
+        output_dir_folder=OUTPUT_DIR_FOLDER,
         logger=setup_logger(
             output_dir_log=OUTPUT_DIR_LOG_WORKING_DATASETS,
             logger_name="clean_combine.generate_working_datasets",
