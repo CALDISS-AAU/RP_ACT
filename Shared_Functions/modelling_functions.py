@@ -1,5 +1,6 @@
 # IMPORTS #
 # External
+import os
 from pathlib import Path
 import numpy as np
 import faiss
@@ -19,12 +20,13 @@ def calc_embeddings(
     output_path: str = "/work/RP_act/ACT/Data/embeddings",
     filename: str = "msg_lvl_embeddings",
     normalize_embeddings: bool = True,
+    local_files_only: bool = True
 ):
     output_path = Path(output_path)
 
     df = pd.read_parquet(data_path)
 
-    model = SentenceTransformer(model_path, local_files_only=True)
+    model = SentenceTransformer(model_path, local_files_only=local_files_only)
 
     embeddings = model.encode(
         df["msg_tekst"].tolist(),
@@ -47,11 +49,19 @@ def calc_embeddings(
 def calc_mistral_embeddings(
     data_path: str = '/work/RP_act/ACT/Data/Clean_Combine/message_data.parquet',
     model: str = "mistral-embed",
-    api_key: str = os.environ["MISTRAL_API_KEY"],
+    api_key: str | None = None,
     dimension: int = 1024,
     output_path: str = "/work/RP_act/ACT/Data/embeddings",
     filename: str = "msg_mistral_embed",
 ):
+    # API key
+    if api_key is None:
+        api_key = os.getenv("MISTRAL_API_KEY")
+
+    if not api_key:
+        raise ValueError(
+            "MISTRAL_API_KEY is required when calculating Mistral embeddings."
+        )
     # Ensure output_path is a Path object
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)  # Create dir if it doesn't exist
