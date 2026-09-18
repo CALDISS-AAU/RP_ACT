@@ -12,6 +12,9 @@ import logging
 # External
 import polars as pl
 import pyarrow
+
+# Internal
+from .add_variables import add_variables
 ## _______ ##
 
 ## HELPER FUNCTIONS ##
@@ -154,9 +157,13 @@ def _combine_conversations(
 ## MAIN FUNCTIONALITY ##
 def generate_working_datasets(
     input_dir_data: str,
+    input_dir_contact_reason: str,
     output_dir_folder: str,
     logger: logging.Logger,
     separator: str,
+    age_range_dict: dict,
+    time_of_day_dict: dict,
+    season_dict: dict,
 ) -> None:
     """Generate additional working datasets from cleaned message data.
        Reads the cleaned message-level dataset and creates two additional
@@ -179,31 +186,87 @@ def generate_working_datasets(
     df = pl.read_parquet(input_dir_data)
     random_conversation = _find_random_conversation_code(df, logger, 20)
     _data_preview(df, logger, random_conversation)
+    output_dir_messages = f"{output_dir_folder}message_data.parquet"
+    add_variables(
+        df=df,
+        input_dir_contact_reason=input_dir_contact_reason,
+        output_dir_data=output_dir_messages,
+        logger=logger,
+        age_range_dict=age_range_dict,
+        time_of_day_dict=time_of_day_dict,
+        season_dict=season_dict
+    )
+    # df.write_parquet(output_dir_messages)
 
     df_without_advisor_msgs = _remove_advisers(df, logger)
     _data_preview(df_without_advisor_msgs, logger, random_conversation)
     output_dir_messages_without_advisors = f"{output_dir_folder}message_data_without_advisors.parquet"
-    df_without_advisor_msgs.write_parquet(output_dir_messages_without_advisors)
+    add_variables(
+        df=df_without_advisor_msgs,
+        input_dir_contact_reason=input_dir_contact_reason,
+        output_dir_data=output_dir_messages_without_advisors,
+        logger=logger,
+        age_range_dict=age_range_dict,
+        time_of_day_dict=time_of_day_dict,
+        season_dict=season_dict
+    )
+    # df_without_advisor_msgs.write_parquet(output_dir_messages_without_advisors)
 
     df_collapsed_messages = _collapse_messages(df, logger, separator)
     _data_preview(df_collapsed_messages, logger, random_conversation)
-    output_dir_collapsed_messages = f"{output_dir_folder}collapsed_massages_data.parquet"
-    df_collapsed_messages.write_parquet(output_dir_collapsed_messages)
+    output_dir_collapsed_messages = f"{output_dir_folder}collapsed_messages_data.parquet"
+    add_variables(
+        df=df_collapsed_messages,
+        input_dir_contact_reason=input_dir_contact_reason,
+        output_dir_data=output_dir_collapsed_messages,
+        logger=logger,
+        age_range_dict=age_range_dict,
+        time_of_day_dict=time_of_day_dict,
+        season_dict=season_dict
+    )
+    # df_collapsed_messages.write_parquet(output_dir_collapsed_messages)
 
-    df_collapsed_messages_without_advisor = _collapse_messages(df_without_advisor_msgs, logger, separator)
+    df_collapsed_messages_without_advisor = _remove_advisers(df_collapsed_messages, logger)
     _data_preview(df_collapsed_messages_without_advisor, logger, random_conversation)
     output_dir_collapsed_messages_without_advisors = f"{output_dir_folder}collapsed_messages_data_without_advisors.parquet"
-    df_collapsed_messages_without_advisor.write_parquet(output_dir_collapsed_messages_without_advisors)
+    add_variables(
+        df=df_collapsed_messages_without_advisor,
+        input_dir_contact_reason=input_dir_contact_reason,
+        output_dir_data=output_dir_collapsed_messages_without_advisors,
+        logger=logger,
+        age_range_dict=age_range_dict,
+        time_of_day_dict=time_of_day_dict,
+        season_dict=season_dict
+    )
+    # df_collapsed_messages_without_advisor.write_parquet(output_dir_collapsed_messages_without_advisors)
 
     df_conversations = _combine_conversations(df, logger, separator)
     _data_preview(df_conversations, logger, random_conversation)
     output_dir_conversations = f"{output_dir_folder}conversation_data.parquet"
-    df_conversations.write_parquet(output_dir_conversations)
+    add_variables(
+        df=df_conversations,
+        input_dir_contact_reason=input_dir_contact_reason,
+        output_dir_data=output_dir_conversations,
+        logger=logger,
+        age_range_dict=age_range_dict,
+        time_of_day_dict=time_of_day_dict,
+        season_dict=season_dict
+    )
+    # df_conversations.write_parquet(output_dir_conversations)
 
     df_conversations_without_advisor = _combine_conversations(df_without_advisor_msgs, logger, separator)
     _data_preview(df_conversations_without_advisor, logger, random_conversation)
     output_dir_conversations_without_advisor = f"{output_dir_folder}conversation_data_without_advisors.parquet"
-    df_conversations_without_advisor.write_parquet(output_dir_conversations_without_advisor)
+    add_variables(
+        df=df_conversations_without_advisor,
+        input_dir_contact_reason=input_dir_contact_reason,
+        output_dir_data=output_dir_conversations_without_advisor,
+        logger=logger,
+        age_range_dict=age_range_dict,
+        time_of_day_dict=time_of_day_dict,
+        season_dict=season_dict
+    )
+    # df_conversations_without_advisor.write_parquet(output_dir_conversations_without_advisor)
 
     # df_collapsed_messages.write_parquet(output_dir_collapsed_messages_data)
     # df_conversations.write_parquet(output_dir_conversation_data)

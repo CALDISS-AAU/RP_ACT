@@ -15,7 +15,7 @@ from Shared_Functions.logger_functionality import *
 from .Functions.data_inspection import inspect_raw_data 
 from .Functions.raw_data_clean_and_combine import clean_and_combine_data
 from .Functions.generate_working_datasets import generate_working_datasets
-from .Functions.add_variables import add_variables
+# from .Functions.add_variables import add_variables
 ## _______ ##
 
 ## STATIC VARIABLES ##
@@ -25,15 +25,9 @@ INPUT_DIR_CONTACT_REASONS = "/work/RP_act/ACT/Data/raw/emner"
 
 # Directories - internal output
 OUTPUT_DIR_MESSAGE_DATA = "Pipelines/Clean_Combine/Data/message_data.parquet" 
-OUTPUT_DIR_FOLDER = "Pipelines/Clean_Combine/Data/"
-# OUTPUT_DIR_COLLAPSED_MESSAGES_DATA = "Pipelines/Clean_Combine/Data/collapsed_messages_data.parquet" 
-# OUTPUT_DIR_CONVERSATION_DATA = "Pipelines/Clean_Combine/Data/conversation_data.parquet"
 
 # Directories - global output
-OUTPUT_DIR_FINAL_MESSAGE_DATA = "./Data/Clean_Combine/message_data.parquet"
-OUTPUT_DIR_FINAL_FOLDER = "./Data/Clean_Combine/"
-OUTPUT_DIR_FINAL_COLLAPSED_MESSAGES_DATA = "./Data/Clean_Combine/collapsed_messages_data.parquet"
-OUTPUT_DIR_FINAL_CONVERSATION_DATA = "./Data/Clean_Combine/conversation_data.parquet"
+OUTPUT_DIR_FOLDER = "./Data/Clean_Combine/"
 
 # Directories - logs
 OUTPUT_DIR_LOG_FULL_PIPELINE = "./Pipelines/Clean_Combine/Logs/full_clean_combine_pipeline.log"
@@ -41,7 +35,6 @@ OUTPUT_DIR_LOG_INSPECTION = "./Pipelines/Clean_Combine/Logs/inspection_of_raw_da
 OUTPUT_DIR_LOG_CLEAN_AND_COMBINE = "./Pipelines/Clean_Combine/Logs/clean_and_combine_raw_data.log"
 OUTPUT_DIR_LOG_CLEAN_AND_COMBINE_EVALUATION = "./Pipelines/Clean_Combine/Logs/clean_and_combine_raw_data_evaluation.log"
 OUTPUT_DIR_LOG_WORKING_DATASETS = "./Pipelines/Clean_Combine/Logs/generate_working_datasets.log"
-OUTPUT_DIR_LOG_VARIABLE_ADDITION = "./Pipelines/Clean_Combine/Logs/variable_addition.log"
 
 # Groupings
 AGE_RANGES = {
@@ -102,46 +95,26 @@ def main() -> None:
 
     generate_working_datasets(
         input_dir_data=OUTPUT_DIR_MESSAGE_DATA,
+        input_dir_contact_reason=INPUT_DIR_CONTACT_REASONS,
         output_dir_folder=OUTPUT_DIR_FOLDER,
         logger=setup_logger(
             output_dir_log=OUTPUT_DIR_LOG_WORKING_DATASETS,
             logger_name="clean_combine.generate_working_datasets",
         ),
         separator=MESSAGE_SEPARATOR,
+        age_range_dict=AGE_RANGES,
+        time_of_day_dict=TIME_OF_DAY,
+        season_dict=SEASON,
     )
-
-    logger = setup_logger(
-        output_dir_log=OUTPUT_DIR_LOG_VARIABLE_ADDITION,
-        logger_name="clean_combine.add_variables",
-    )
-
-    for input_path, output_path in [
-        (OUTPUT_DIR_MESSAGE_DATA, OUTPUT_DIR_FINAL_MESSAGE_DATA),
-        (OUTPUT_DIR_COLLAPSED_MESSAGES_DATA, OUTPUT_DIR_FINAL_COLLAPSED_MESSAGES_DATA),
-        (OUTPUT_DIR_CONVERSATION_DATA, OUTPUT_DIR_FINAL_CONVERSATION_DATA),
-    ]:
-        logger.info(f"Adding variables to {input_path}")
-
-        add_variables(
-            input_dir_data=input_path,
-            input_dir_contact_reason=INPUT_DIR_CONTACT_REASONS,
-            output_dir_data=output_path,
-            logger=logger,
-            age_range_dict=AGE_RANGES,
-            time_of_day_dict=TIME_OF_DAY,
-            season_dict=SEASON,
-        )
 
     rebuild_pipeline_log(
         step_log_paths=[
             OUTPUT_DIR_LOG_INSPECTION,
             OUTPUT_DIR_LOG_CLEAN_AND_COMBINE,
             OUTPUT_DIR_LOG_WORKING_DATASETS,
-            OUTPUT_DIR_LOG_VARIABLE_ADDITION,
         ],
         output_dir_log=OUTPUT_DIR_LOG_FULL_PIPELINE,
     )
-
 ## _____________ ##
 
 ## CALL OF MAIN FUNCTION ##
