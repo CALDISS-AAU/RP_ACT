@@ -8,6 +8,7 @@ from Functions.logistic_reg_func import _create_report, _logistic_regression, _p
 from Shared_Functions.modelling_functions import (
     calc_embeddings,
     calc_mistral_embeddings,
+    split_data
 )
 
 def main(calculate_embeddings=False):
@@ -39,7 +40,7 @@ def main(calculate_embeddings=False):
     # LR Stuff
     df = pd.read_parquet('/work/RP_act/ACT/Data/Clean_Combine/message_data.parquet')
 
-    df_model = _prep_data(df=df)
+    df_model, val_df, test_df = _prep_data(df=df)
 
     _, report = _logistic_regression(df=df_model, embedding_path='/work/RP_act/ACT/Data/embeddings/msg_lvl_embeddings.npy', filename= 'message_norm_cm')
 
