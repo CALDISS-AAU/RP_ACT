@@ -238,7 +238,7 @@ def _give_summary(
 
 ## MAIN FUNCTIONALITY ##
 def add_variables(
-    input_dir_data: str,
+    df: pl.DataFrame,
     input_dir_contact_reason: str,
     output_dir_data: str,
     logger: logging.Logger,
@@ -262,7 +262,7 @@ def add_variables(
            season_dict: Mapping of season labels to month values.
     """
 
-    df = pl.read_parquet(input_dir_data)
+    # df = pl.read_parquet(input_dir_data)
     df_contact_reason = _open_and_combine_contact_reasons(input_dir_contact_reason, logger)
 
     logger.info("A summary of the initial data")
