@@ -2,23 +2,64 @@
 
 # External
 import pandas as pd
-import os
+import argparse
 
 # Internal
-from Functions.logistic_reg_func import _create_report, _logistic_regression, _prep_data
+from Functions.logistic_reg_func import _prep_data, _create_report, _LR_gender, _LR_age
 
 # Internals
 from Shared_Functions.modelling_functions import (
     calc_embeddings,
-    # calc_mistral_embeddings,
-    split_data,
+    calc_mistral_embeddings,
 )
 
 
-def main(calculate_embeddings=False):
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run logistic regression")
+
+    parser.add_argument(
+        "--calculate-embeddings",
+        action="store_true",
+        help="Recalculate embeddings before running",
+    )
+
+    parser.add_argument(
+        "--embedding-path",
+        type=str,
+        required=True,
+        help="Path to calculated embeddings used for validation pipeline",
+    )
+
+    parser.add_argument("--data-path", type=str, required=True, help="Path to data")
+
+    parser.add_argument(
+        "--C",
+        type=float,
+        default=1.0,
+    )
+
+    parser.add_argument(
+        "--class-weight",
+        type=str,
+        default="balanced",
+        choices=["balanced", "none"],
+    )
+
+    parser.add_argument(
+        "--filename",
+        type=str,
+        default="confusion_matrix",
+    )
+
+    return parser.parse_args()
+
+
+def main():
+
+    args = parse_args()
 
     # Embedding stuff
-    if calculate_embeddings:
+    if args.calculate_embeddings:
         calc_embeddings(
             data_path="/work/RP_act/ACT/Data/Clean_Combine/message_data_without_advisors.parquet",
             filename="msg_lvl_without_advisors_embeddings",
@@ -54,19 +95,33 @@ def main(calculate_embeddings=False):
         calc_mistral_embeddings()
 
     # LR Stuff
-    df = pd.read_parquet(
-        "/work/RP_act/ACT/Data/Clean_Combine/message_data_without_advisors.parquet"
+    class_weight = None if args.class_weight == "none" else args.class_weight
+
+    df = pd.read_parquet(args.data_path)
+
+    train_df, val_df, test_df = _prep_data(df=df, embedding_path=args.embedding_path)
+
+    # Gender probe
+    _, gender_report = _LR_gender(
+        train_df=train_df,
+        test_df=test_df,
+        C=args.C,
+        class_weight=class_weight,
+        filename=f"{args.filename}_gender.xlsx",
     )
 
-    df_model, val_df, test_df = _prep_data(df=df, embedding_path="/work/RP_act/ACT/Data/embeddings/msg_lvl_without_advisors_embeddings.npy")
+    _create_report(gender_report, filename=f"{args.filename}_gender.xlsx")
 
-    _, report = _logistic_regression(
-        df=df_model,
-        embedding_path="/work/RP_act/ACT/Data/embeddings/msg_lvl_without_advisors_embeddings.npy",
-        filename="message_norm_cm",
+    # Age Probe
+    _, age_report = _LR_gender(
+        train_df=train_df,
+        test_df=test_df,
+        C=args.C,
+        class_weight=class_weight,
+        filename=f"{args.filename}_age"
     )
 
-    _create_report(report, filename="message_norm_LR.xlsx")
+    _create_report(age_report, filename=f"{args.filename}_age.xlsx")
 
 
 if __name__ == "__main__":

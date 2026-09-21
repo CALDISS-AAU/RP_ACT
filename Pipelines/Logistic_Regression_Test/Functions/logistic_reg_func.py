@@ -5,6 +5,7 @@ import faiss
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import polars as pl
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
@@ -35,30 +36,44 @@ def _prep_data(
             val_df: Holdout validation set
             test_df: test set
     """
+    
     embeddings = np.load(embedding_path)
-
-    # Merging embeddings back to dataframe
     print("df rows:", len(df))
     print("embedding rows:", len(embeddings))
-    assert len(df) == len(embeddings)
+
+    # Merging embeddings back to dataframe
+    assert len(df) == len(embeddings), (
+        "Number of dataframe rows does not match number of embeddings"
+    )
+
+    df = df.copy()
     df["embedding"] = list(embeddings)
 
     polars_df = pl.from_pandas(df)
+
     # splitting
     train_df, val_df, test_df = split_data(polars_df)
 
     train_df = train_df.to_pandas()
+    val_df = val_df.to_pandas()
+    test_df = test_df.to_pandas()
 
-    df_model = train_df[train_df["gender"].isin(["female", "male"])].copy()
+    valid_genders = ['female', "male"]
 
-    return df_model, val_df, test_df
+    train_df = train_df[train_df["gender"].isin(valid_genders)].copy()
+
+    val_df = val_df[val_df['gender'].isin(valid_genders)].copy()
+
+    test_df = test_df[test_df['gender'].isin(valid_genders)].copy()
+
+    return train_df, val_df, test_df
 
 
 def _LR_gender(
     train_df: pd.DataFrame,
     test_df: pd.DataFrame,
-    output_path: str = "/work/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
-    filename: str = "Confusion_matrix",
+    filename: str,
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
 ):
     """
     Function for training Logistic regression
@@ -109,13 +124,13 @@ def _LR_gender(
 def _LR_age(
     train_df: pd.DataFrame,
     test_df: pd.DataFrame,
-    embedding_path: str,
+    filename: str,
+    C: float = 1.0,
+    class_weight="balanced",
     output_path: str = "/work/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
-    filename: str = "Confusion_matrix_age",
 ):
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
-    embeddings = np.load(embedding_path)
 
     X_train = np.stack(train_df["embedding"].to_numpy())
     y_train = train_df["age_group"].to_numpy()
@@ -123,17 +138,35 @@ def _LR_age(
     X_test = np.stack(test_df["embedding"].to_numpy())
     y_test = test_df["age_group"].to_numpy()
 
-    
-    LR_age = LogisticRegression(max_iter=1000, class_weight="balanced")
+    LR_age = LogisticRegression(
+        C=C,
+        max_iter=1000,
+        class_weight=class_weight,
+    )
+
     LR_age.fit(X_train, y_train)
 
     preds_age = LR_age.predict(X_test)
 
-    report = classification_report(y_test, preds_age, output_dict=True, zero_division=0)
+    report = classification_report(
+        y_test,
+        preds_age,
+        output_dict=True,
+        zero_division=0,
+    )
 
-    cm = confusion_matrix(y_test, preds_age, labels=LR_age.classes_)
+    cm = confusion_matrix(
+        y_test,
+        preds_age,
+        labels=LR_age.classes_,
+    )
 
-    cm_df = pd.DataFrame(cm, index=LR_age.classes_, columns=LR_ageclasses_)
+    cm_df = pd.DataFrame(
+        cm,
+        index=LR_age.classes_,
+        columns=LR_age.classes_,
+    )
+
     print(cm_df)
 
     disp = ConfusionMatrixDisplay(
@@ -158,7 +191,7 @@ def _LR_age(
 
 def _create_report(
     report,
-    filename: str = "clf_report.xlsx",
+    filename: str,
     output_path: str = "/work/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
 ):
 
