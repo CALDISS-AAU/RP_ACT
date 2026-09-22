@@ -27,7 +27,7 @@ INPUT_DIR_CONTACT_REASONS = "/work/RP_act/ACT/Data/raw/emner"
 OUTPUT_DIR_MESSAGE_DATA = "Pipelines/Clean_Combine/Data/message_data.parquet" 
 
 # Directories - global output
-OUTPUT_DIR_FOLDER = "./Data/Clean_Combine/"
+OUTPUT_DIR_FOLDER = "/work/RP_act/ACT/Data/Clean_Combine/"
 
 # Directories - logs
 OUTPUT_DIR_LOG_FULL_PIPELINE = "./Pipelines/Clean_Combine/Logs/full_clean_combine_pipeline.log"
