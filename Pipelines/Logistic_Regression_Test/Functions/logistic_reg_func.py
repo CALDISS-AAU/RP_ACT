@@ -127,7 +127,7 @@ def _LR_age(
     filename: str,
     C: float = 1.0,
     class_weight="balanced",
-    output_path: str = "/work/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
 ):
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -192,7 +192,7 @@ def _LR_age(
 def _create_report(
     report,
     filename: str,
-    output_path: str = "/work/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/results",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
 ):
 
     output_path = Path(output_path)

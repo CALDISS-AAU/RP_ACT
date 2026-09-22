@@ -10,7 +10,7 @@ from Functions.logistic_reg_func import _prep_data, _create_report, _LR_gender, 
 # Internals
 from Shared_Functions.modelling_functions import (
     calc_embeddings,
-    calc_mistral_embeddings,
+    # calc_mistral_embeddings,
 )
 
 
@@ -87,12 +87,13 @@ def main():
         )
 
         calc_embeddings(
+            data_path="/work/RP_act/ACT/Data/Clean_Combine/message_data_without_advisors.parquet",
             model_path="BAAI/bge-m3",
-            filename="bge_m3_baseline_embeddings",
+            filename="bge_m3_msg_without_advisors_embeddings",
             local_files_only=False,
         )
 
-        calc_mistral_embeddings()
+        # calc_mistral_embeddings()
 
     # LR Stuff
     class_weight = None if args.class_weight == "none" else args.class_weight
