@@ -25,7 +25,7 @@ INPUT_DIR_COLLAPSED_MESSAGES = f"{INPUT_DIR_BASE}/collapsed_messages_data.parque
 INPUT_DIR_CONVERSATIONS = f"{INPUT_DIR_BASE}/conversation_data.parquet" 
 
 # Directories - global output
-OUTPUT_DIR_DATA_STATS = "./Data/Data_Stats_Extraction/data_stats.json" 
+OUTPUT_DIR_DATA_STATS = "/work/RP_act/ACT/Data/Data_Stats_Extraction/data_stats.json" 
 
 # Directories - logs
 OUTPUT_DIR_LOG_BASE = "./Pipelines/Data_Stats_Extraction/Logs"
