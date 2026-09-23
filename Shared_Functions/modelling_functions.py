@@ -124,21 +124,49 @@ def split_data(
     df: pl.DataFrame,
     val_size: float = 0.15,
     test_size: float = 0.15,
+    seed: int = 1849,
+    base_dir: str = '/work/RP_act/ACT/Data/splits'
 ) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
+    """
+    Split a Polars DataFrame into stratified train, validation, and test sets.
+
+    The data is stratified by gender and age group to preserve their
+    distributions across the resulting splits. The seed controls the
+    random shuffling and makes the split reproducible.
+
+    Args:
+        df: DataFrame to split.
+        val_size: Proportion of the data assigned to the validation set.
+        test_size: Proportion of the data assigned to the test set.
+        seed: Random seed used for reproducible splitting.
+
+    Returns:
+        A tuple containing the train, validation, and test DataFrames,
+        respectively.
+    """
+    
+    output_dir = Path(base_dir) / f"seed_{seed}"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     train_df, temp_df = split_into_train_eval(
         df,
         eval_rel_size=val_size + test_size,
         stratify_by=['gender', 'age_group'],
-        shuffle=False,
-        seed=1849
+        shuffle=True,
+        seed=seed
     )
     val_df, test_df = split_into_train_eval(
         temp_df,
         eval_rel_size=test_size / (val_size + test_size),
         stratify_by=['gender', 'age_group'],
-        shuffle=False,
-        seed=1349
+        shuffle=True,
+        seed=seed
     )
+
+    train_df.write_parquet(output_dir / "train.parquet")
+    val_df.write_parquet(output_dir / "val.parquet")
+    test_df.write_parquet(output_dir / "test.parquet")
+
     return train_df, val_df, test_df
 
 # Create Datasets.Dataset

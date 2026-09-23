@@ -33,6 +33,13 @@ def parse_args():
     parser.add_argument("--data-path", type=str, required=True, help="Path to data")
 
     parser.add_argument(
+    "--seed",
+    type=int,
+    default=1849,
+    help="Random seed used for the train/validation/test split.",
+)
+
+    parser.add_argument(
         "--C",
         type=float,
         default=1.0,
@@ -100,7 +107,7 @@ def main():
 
     df = pd.read_parquet(args.data_path)
 
-    train_df, val_df, test_df = _prep_data(df=df, embedding_path=args.embedding_path)
+    train_df, val_df, test_df = _prep_data(df=df, embedding_path=args.embedding_path, seed=args.seed)
 
     # Gender probe
     _, gender_report = _LR_gender(
@@ -108,13 +115,11 @@ def main():
         test_df=test_df,
         C=args.C,
         class_weight=class_weight,
-        filename=f"{args.filename}_gender.xlsx",
+        filename=f"{args.filename}_gender",
     )
 
-    _create_report(gender_report, filename=f"{args.filename}_gender.xlsx")
-
     # Age Probe
-    _, age_report = _LR_gender(
+    _, age_report = _LR_age(
         train_df=train_df,
         test_df=test_df,
         C=args.C,
@@ -122,7 +127,11 @@ def main():
         filename=f"{args.filename}_age"
     )
 
-    _create_report(age_report, filename=f"{args.filename}_age.xlsx")
+    _create_report(
+    gender_report=gender_report,
+    age_report=age_report,
+    filename=f"{args.filename}.xlsx",
+)
 
 
 if __name__ == "__main__":

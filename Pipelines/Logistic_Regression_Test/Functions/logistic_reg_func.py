@@ -21,6 +21,7 @@ from Shared_Functions.modelling_functions import split_data
 def _prep_data(
     df: pd.DataFrame,
     embedding_path: str,
+    seed: int
 ):
     """
     Function preps data for logistic regression.
@@ -52,7 +53,7 @@ def _prep_data(
     polars_df = pl.from_pandas(df)
 
     # splitting
-    train_df, val_df, test_df = split_data(polars_df)
+    train_df, val_df, test_df = split_data(polars_df, seed=seed)
 
     train_df = train_df.to_pandas()
     val_df = val_df.to_pandas()
@@ -73,6 +74,8 @@ def _LR_gender(
     train_df: pd.DataFrame,
     test_df: pd.DataFrame,
     filename: str,
+    C: float = 1.0,
+    class_weight="balanced",
     output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
 ):
     """
@@ -190,13 +193,30 @@ def _LR_age(
 
 
 def _create_report(
-    report,
-    filename: str,
-    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
+    gender_report,
+    age_report,
+    filename: str = "lr_results.xlsx",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/Results",
 ):
-
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    report_df = pd.DataFrame(report).T
-    report_df.to_excel(output_path / filename)
+    gender_df = pd.DataFrame(gender_report).T
+    age_df = pd.DataFrame(age_report).T
+
+    save_path = output_path / filename
+
+    print(f"Saving Excel report to: {save_path}")
+
+    with pd.ExcelWriter(save_path) as writer:
+        gender_df.to_excel(
+            writer,
+            sheet_name="Gender",
+        )
+
+        age_df.to_excel(
+            writer,
+            sheet_name="Age",
+        )
+
+    print(f"Excel exists: {save_path.exists()}")
