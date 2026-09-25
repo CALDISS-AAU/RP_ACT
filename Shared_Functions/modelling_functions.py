@@ -4,6 +4,7 @@ import polars as pl
 from datasets import Dataset
 from sentence_transformers import SentenceTransformer, models
 from polars_splitters import split_into_train_eval
+from sentence_transformers.datasets import DenoisingAutoEncoderDataset
 
 import nltk
 
@@ -53,6 +54,16 @@ def split_data(
 
 
 # Create Datasets.Dataset
+
+def noise_transform(batch, del_ratio=0.6):
+    noisy = []
+    for text in batch["text"]:
+        words = text.split()
+        keep_prob = 1.0 - del_ratio
+        kept_words = [w for w in words if random.random() < keep_prob]
+        noisy.append(" ".join(kept_words))
+    return {"noisy": noisy, "text": batch["text"]}
+
 
 
 def create_hf_dataset(df: pl.DataFrame, text_column: str = "msg_tekst") -> Dataset:
