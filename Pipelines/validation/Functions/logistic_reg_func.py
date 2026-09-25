@@ -18,11 +18,7 @@ from sklearn.model_selection import train_test_split
 from Shared_Functions.modelling_functions import split_data
 
 
-def _prep_data(
-    df: pd.DataFrame,
-    embedding_path: str,
-    seed: int
-):
+def _prep_data(df: pd.DataFrame, embedding_path: str, seed: int):
     """
     Function preps data for logistic regression.
     Inputs:
@@ -37,7 +33,7 @@ def _prep_data(
             val_df: Holdout validation set
             test_df: test set
     """
-    
+
     embeddings = np.load(embedding_path)
     print("df rows:", len(df))
     print("embedding rows:", len(embeddings))
@@ -59,13 +55,13 @@ def _prep_data(
     val_df = val_df.to_pandas()
     test_df = test_df.to_pandas()
 
-    valid_genders = ['female', "male"]
+    valid_genders = ["female", "male"]
 
     train_df = train_df[train_df["gender"].isin(valid_genders)].copy()
 
-    val_df = val_df[val_df['gender'].isin(valid_genders)].copy()
+    val_df = val_df[val_df["gender"].isin(valid_genders)].copy()
 
-    test_df = test_df[test_df['gender'].isin(valid_genders)].copy()
+    test_df = test_df[test_df["gender"].isin(valid_genders)].copy()
 
     return train_df, val_df, test_df
 
@@ -220,3 +216,31 @@ def _create_report(
         )
 
     print(f"Excel exists: {save_path.exists()}")
+
+
+def _calc_sd_mean(results_path: str):
+    results_path = Path(results_path)
+
+    results = []
+
+    for file in results_path.glob("*.xlsx"):
+        report = pd.read_excel(file, index_col=0)
+
+        model = "bge-m3" if "bge" in file.stem.lower() else "tsdae"
+
+        results.append(
+            {
+                "model": model,
+                "file": file.stem,
+                "macro_f1": report.loc["macro avg", "f1-score"],
+                "balanced_accuracy": report.loc["macro avg", "recall"],
+            }
+        )
+
+    results_df = pd.DataFrame(results)
+
+    summary = results_df.groupby("model")[["macro_f1", "balanced_accuracy"]].agg(
+        ["mean", "std"]
+    )
+
+    return summary
