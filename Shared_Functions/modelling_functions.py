@@ -2,6 +2,7 @@
 # External
 import os
 from pathlib import Path
+import random
 import numpy as np
 import faiss
 import polars as pl
@@ -172,34 +173,80 @@ def split_data(
 
 # Create Datasets.Dataset
 
-def noise_transform(batch, del_ratio=0.6):
+def noise_transform(
+    batch,
+    del_ratio=0.6,
+    text_column: str = 'msg_tekst'
+):
     noisy = []
-    for text in batch["text"]:
+
+    for text in batch[text_column]:
         words = text.split()
+
+        if len(words) == 0:
+            noisy.append(text)
+            continue
+
         keep_prob = 1.0 - del_ratio
-        kept_words = [w for w in words if random.random() < keep_prob]
+
+        kept_words = [
+            word
+            for word in words
+            if random.random() < keep_prob
+        ]
+
+        # Guarantee at least one token survives
+        if len(kept_words) == 0:
+            kept_words = [random.choice(words)]
+
         noisy.append(" ".join(kept_words))
-    return {"noisy": noisy, "text": batch["text"]}
+
+    return {
+        "noisy": noisy,
+        "text": batch[text_column],
+    }
 
 
 
 def create_hf_dataset(
     df: pl.DataFrame,
-    text_column: str = 'msg_tekst'
+    text_column: str = "msg_tekst",
 ) -> Dataset:
+    texts = df[text_column].to_list()
 
-    texts = df[text_column].to_list()   
     return Dataset.from_dict({
-        "source": texts,
-        "target": texts,
+        text_column: texts,
     })
 
 
-def prepare_tsdae_data(input_dir):  
+def prepare_tsdae_data(
+    input_dir,
+    del_ratio: float = 0.6,
+):
     dataset = pl.read_parquet(input_dir)
+
     train_df, val_df, test_df = split_data(dataset)
 
     train_dataset = create_hf_dataset(train_df)
     val_dataset = create_hf_dataset(val_df)
+
+    # Dynamic noise during training
+    train_dataset.set_transform(
+        lambda batch: noise_transform(
+            batch,
+            del_ratio=del_ratio,
+        )
+    )
+
+    # Fixed noise for validation
+    random.seed(1998)
+
+    val_dataset = val_dataset.map(
+        lambda batch: noise_transform(
+            batch,
+            del_ratio=del_ratio,
+        ),
+        batched=True,
+    )
 
     return train_dataset, val_dataset, test_df
