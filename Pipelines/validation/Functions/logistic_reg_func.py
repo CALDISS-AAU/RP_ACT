@@ -72,7 +72,7 @@ def _LR_gender(
     filename: str,
     C: float = 1.0,
     class_weight="balanced",
-    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results",
 ):
     """
     Function for training Logistic regression
@@ -126,7 +126,7 @@ def _LR_age(
     filename: str,
     C: float = 1.0,
     class_weight="balanced",
-    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results",
 ):
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -192,7 +192,7 @@ def _create_report(
     gender_report,
     age_report,
     filename: str = "lr_results.xlsx",
-    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/Results",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results",
 ):
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
