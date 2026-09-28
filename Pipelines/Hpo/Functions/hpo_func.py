@@ -38,7 +38,7 @@ def _hpo_model_init():
     """
     return build_sentence_transformer(
         model_name="BAAI/bge-m3",
-        max_seq_length=128,
+        max_seq_length=1024,
         pooling_mode="mean",
     )
 
@@ -106,7 +106,7 @@ def _run_tsdae_hpo(
     input_dir,
     output_dir,
     log_dir,
-    n_trials=5,
+    n_trials=4,
 ):
     """
     Run the TSDAE Optuna study.

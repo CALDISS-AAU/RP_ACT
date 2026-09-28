@@ -36,7 +36,7 @@ def main():
     parser.add_argument(
         "--n-trials",
         type=int,
-        default=5,
+        default=4,
         help=(
             "Number of trials to run in this worker"
         ),
