@@ -28,6 +28,7 @@ dependencies = [
     "mistralai>=2.10.0",
     "rich>=15.0.0",
     "spacy>=3.8.16",
+    "seaborn>=0.13.2",
 ]
 
 [project.scripts]
