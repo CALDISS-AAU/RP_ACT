@@ -20,6 +20,7 @@ from sentence_transformers.trainer import SentenceTransformerTrainer
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
     prepare_tsdae_data,
+    load_tsdae_training_data
 )
 
 
@@ -114,7 +115,7 @@ def _run_tsdae_hpo(
     Parameters
     ----------
     input_dir:
-        Path to the input parquet dataset.
+        Path to the input HF dataset.
 
     output_dir:
         Directory for per-trial Trainer output.
@@ -146,7 +147,7 @@ def _run_tsdae_hpo(
     log.info("HPO log directory: %s", log_path)
     log.info("Optuna journal: %s", journal_path)
 
-    train_dataset, val_dataset, _ = prepare_tsdae_data(input_path)
+    train_dataset, val_dataset, _ = load_tsdae_training_data(input_path)
 
     storage = JournalStorage(JournalFileBackend(str(journal_path)))
 
