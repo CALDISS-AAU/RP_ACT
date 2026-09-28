@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 # Internal imports
-from Functions.train_func import _train_model, TSDEATrainingConfig
+from Functions.train_func import _train_model, TSDEATrainingConfig, load_tsdae_training_data
 
 
 REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
@@ -15,7 +15,7 @@ REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
 def main():
     parser = argparse.ArgumentParser(description="Train TSDAE model")
     parser.add_argument(
-        "--data-path", required=True, help="Path to input .parquet file"
+        "--data-path", required=True, help="Path to saved Hugging Face Dataset"
     )
     parser.add_argument(
         "--output-dir-logs",
@@ -27,6 +27,7 @@ def main():
         default=str(REPO_ROOT / "Pipelines" / "TSDAE_Model" / "modelling"),
         help="Directory for storing trained models",
     )
+    
     # Config parse
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--batch-size", type=int, default=32)
@@ -34,6 +35,8 @@ def main():
     parser.add_argument("--warmup-ratio", type=float, default=0.1)
     parser.add_argument("--max-grad-norm", type=float, default=1.0)
     parser.add_argument("--weight-decay", type=float, default=0.01)
+    parser.add_argument("--del-ratio", type=float, default=0.6, help="Token deletion ratio used for TSDAE corruption.")
+    parser.add_argument("--noise-seed", type=int, default=1998, help="Random seed used for fixed validation corruption.")
 
     args = parser.parse_args()
 
@@ -45,6 +48,8 @@ def main():
         warmup_ratio=args.warmup_ratio,
         max_grad_norm=args.max_grad_norm,
         weight_decay=args.weight_decay,
+        del_ratio=args.del_ratio,
+        noise_seed=args.noise_seed,
     )
 
     _train_model(input_dir=args.data_path, config=config)

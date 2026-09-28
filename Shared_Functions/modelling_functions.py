@@ -7,10 +7,9 @@ import numpy as np
 import faiss
 import polars as pl
 import pandas as pd
-from datasets import Dataset
+from datasets import Dataset, DatasetDict, load_from_disk
 from sentence_transformers import SentenceTransformer, models
 from polars_splitters import split_into_train_eval
-from sentence_transformers.datasets import DenoisingAutoEncoderDataset
 
 import nltk
 nltk.download('punkt_tab')
@@ -175,7 +174,7 @@ def split_data(
 
 def noise_transform(
     batch,
-    del_ratio=0.6,
+    del_ratio: float = 0.6,
     text_column: str = 'msg_tekst'
 ):
     noisy = []
@@ -220,8 +219,8 @@ def create_hf_dataset(
 
 
 def prepare_tsdae_data(
-    input_dir,
-    del_ratio: float = 0.6,
+    input_dir: str,
+    output_dir: str,
 ):
     dataset = pl.read_parquet(input_dir)
 
@@ -229,6 +228,29 @@ def prepare_tsdae_data(
 
     train_dataset = create_hf_dataset(train_df)
     val_dataset = create_hf_dataset(val_df)
+    test_dataset = create_hf_dataset(test_df)
+
+    dataset = DatasetDict({
+        "train": train_dataset,
+        "validation": val_dataset,
+        "test": test_dataset,
+    })
+
+    dataset.save_to_disk(output_dir)
+
+    return dataset
+
+
+def load_tsdae_training_data(
+    dataset_path: str,
+    del_ratio: float = 0.6,
+    seed: int = 1998,
+):
+    dataset = load_from_disk(dataset_path)
+
+    train_dataset = dataset["train"]
+    val_dataset = dataset["validation"]
+    test_dataset = dataset["test"]
 
     # Dynamic noise during training
     train_dataset.set_transform(
@@ -238,8 +260,8 @@ def prepare_tsdae_data(
         )
     )
 
-    # Fixed noise for validation
-    random.seed(1998)
+    # Fixed validation corruption
+    random.seed(seed)
 
     val_dataset = val_dataset.map(
         lambda batch: noise_transform(
@@ -249,4 +271,4 @@ def prepare_tsdae_data(
         batched=True,
     )
 
-    return train_dataset, val_dataset, test_df
+    return train_dataset, val_dataset, test_dataset
