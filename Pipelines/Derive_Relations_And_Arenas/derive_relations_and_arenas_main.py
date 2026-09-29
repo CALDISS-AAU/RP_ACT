@@ -25,12 +25,20 @@ INPUT_DIR_ALL_CONVOS = "./Data/Clean_Combine/conversation_data_without_advisors.
 
 # Directories - global output
 OUTPUT_DIR_WORDS_BASE = "./Data/Derive_Relations_And_Arenas"
-OUTPUT_DIR_UNIQUE_WORDS_ALL = f"{OUTPUT_DIR_WORDS_BASE}/word_counts_all.csv"
-OUTPUT_DIR_UNIQUE_WORDS_BOYS = f"{OUTPUT_DIR_WORDS_BASE}/word_counts_boys.csv"
-OUTPUT_DIR_UNIQUE_WORDS_GIRLS = f"{OUTPUT_DIR_WORDS_BASE}/word_counts_girls.csv"
-OUTPUT_DIR_UNIQUE_WORDS_PRETEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts_preteen.csv"
-OUTPUT_DIR_UNIQUE_WORDS_EARLYTEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts_earlyteen.csv"
-OUTPUT_DIR_UNIQUE_WORDS_TEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts_teen.csv"
+
+OUTPUT_DIR_UNIQUE_WORDS_ALL = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/all.csv"
+OUTPUT_DIR_UNIQUE_WORDS_BOYS = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/boys.csv"
+OUTPUT_DIR_UNIQUE_WORDS_GIRLS = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/girls.csv"
+OUTPUT_DIR_UNIQUE_WORDS_PRETEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/preteen.csv"
+OUTPUT_DIR_UNIQUE_WORDS_EARLYTEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/earlyteen.csv"
+OUTPUT_DIR_UNIQUE_WORDS_TEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/teen.csv"
+
+OUTPUT_DIR_UNIQUE_TEXTS_ALL = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/all.csv"
+OUTPUT_DIR_UNIQUE_TEXTS_BOYS = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/boys.csv"
+OUTPUT_DIR_UNIQUE_TEXTS_GIRLS = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/girls.csv"
+OUTPUT_DIR_UNIQUE_TEXTS_PRETEEN = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/preteen.csv"
+OUTPUT_DIR_UNIQUE_TEXTS_EARLYTEEN = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/earlyteen.csv"
+OUTPUT_DIR_UNIQUE_TEXTS_TEEN = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/teen.csv"
 
 # Other
 maybe_stopwords = (
@@ -185,6 +193,9 @@ nlp = Danish()
 stop_words = set(nlp.Defaults.stop_words)
 stop_words.update(stopwords_extension)
 stop_words.update(maybe_stopwords)
+
+min_word_count = 1000
+min_text_count = 900
 ## _______________________ ##
 
 
@@ -216,6 +227,33 @@ def _count_used_words(
         writer = csv.writer(file)
         writer.writerow(["word", "count"])
         writer.writerows(filtered_words.most_common())
+
+def _count_texts_with_word(
+    input_df: pl.DataFrame,
+    output_dir: str,
+    min_count=1,
+) -> None:
+    texts = input_df["msg_tekst"]
+    word_counts = Counter()
+
+    for text in texts:
+        new_words = re.findall(r"\b[\w']+\b", text.lower())
+        new_words = {word for word in new_words if word not in stop_words}
+        word_counts.update(new_words)
+
+    filtered_words = Counter({
+        word: count
+        for word, count in word_counts.items()
+        if count > min_count
+    })
+
+    output_path = Path(output_dir)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open("w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["word", "count"])
+        writer.writerows(filtered_words.most_common())
 ## ________________ ##
 
 
@@ -227,7 +265,12 @@ def main() -> None:
     _count_used_words(
         input_df = df,
         output_dir = OUTPUT_DIR_UNIQUE_WORDS_ALL,
-        min_count=1000
+        min_count=min_word_count
+    )
+    _count_texts_with_word(
+        input_df=df,
+        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_ALL,
+        min_count=min_text_count
     )
     
     # Boys
@@ -237,7 +280,12 @@ def main() -> None:
     _count_used_words(
         input_df = df_boys,
         output_dir = OUTPUT_DIR_UNIQUE_WORDS_BOYS,
-        min_count=1000
+        min_count=min_word_count
+    )
+    _count_texts_with_word(
+        input_df=df_boys,
+        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_BOYS,
+        min_count=min_text_count
     )
 
     # Girls
@@ -247,7 +295,12 @@ def main() -> None:
     _count_used_words(
         input_df = df_girls,
         output_dir = OUTPUT_DIR_UNIQUE_WORDS_GIRLS,
-        min_count=1000
+        min_count=min_word_count
+    )
+    _count_texts_with_word(
+        input_df=df_girls,
+        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_GIRLS,
+        min_count=min_text_count
     )
 
     # Pre-teens
@@ -257,7 +310,12 @@ def main() -> None:
     _count_used_words(
         input_df = df_preteen,
         output_dir = OUTPUT_DIR_UNIQUE_WORDS_PRETEEN,
-        min_count=1000
+        min_count=min_word_count
+    )
+    _count_texts_with_word(
+        input_df=df_preteen,
+        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_PRETEEN,
+        min_count=min_text_count
     )
 
     # Early-teens
@@ -267,7 +325,12 @@ def main() -> None:
     _count_used_words(
         input_df = df_earlyteen,
         output_dir = OUTPUT_DIR_UNIQUE_WORDS_EARLYTEEN,
-        min_count=1000
+        min_count=min_word_count
+    )
+    _count_texts_with_word(
+        input_df=df_earlyteen,
+        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_EARLYTEEN,
+        min_count=min_text_count
     )
 
     # Teens
@@ -277,7 +340,12 @@ def main() -> None:
     _count_used_words(
         input_df = df_teen,
         output_dir = OUTPUT_DIR_UNIQUE_WORDS_TEEN,
-        min_count=1000
+        min_count=min_word_count
+    )
+    _count_texts_with_word(
+        input_df=df_teen,
+        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_TEEN,
+        min_count=min_text_count
     )
 
 ## CALL OF MAIN FUNCTION ##
