@@ -20,6 +20,18 @@ REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
 def main():
     parser = argparse.ArgumentParser(description="Perform HPO on TSDAE model")
     parser.add_argument(
+        "--prepare-data",
+        action="store_true",
+        help="Create and save HF train/validation/test dataset before HPO"
+    )
+
+    parser.add_argument(
+        "--dataset-dir",
+        required=True,
+        help="Directory for prepared HF DatasetDict",
+    )
+
+    parser.add_argument(
         "--data-path",
         required=True,
         help="Path to input HF dataset file"
@@ -43,7 +55,12 @@ def main():
     )
 
     args = parser.parse_args()
-    
+
+    if args.prepare_data:
+        prepare_tsdae_data(
+            input_dir=args.data_path,
+            output_dir=args.dataset_dir,
+        )
     
     _run_tsdae_hpo(
         input_dir=args.data_path,
