@@ -6,6 +6,7 @@ To run this script, use the following command from the project root:
 
 ## IMPORTS ##
 import polars as pl
+import pandas as pd
 from collections import Counter
 import re 
 import csv
@@ -26,19 +27,7 @@ INPUT_DIR_ALL_CONVOS = "./Data/Clean_Combine/conversation_data_without_advisors.
 # Directories - global output
 OUTPUT_DIR_WORDS_BASE = "./Data/Derive_Relations_And_Arenas"
 
-OUTPUT_DIR_UNIQUE_WORDS_ALL = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/all.csv"
-OUTPUT_DIR_UNIQUE_WORDS_BOYS = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/boys.csv"
-OUTPUT_DIR_UNIQUE_WORDS_GIRLS = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/girls.csv"
-OUTPUT_DIR_UNIQUE_WORDS_PRETEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/preteen.csv"
-OUTPUT_DIR_UNIQUE_WORDS_EARLYTEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/earlyteen.csv"
-OUTPUT_DIR_UNIQUE_WORDS_TEEN = f"{OUTPUT_DIR_WORDS_BASE}/word_counts/teen.csv"
-
-OUTPUT_DIR_UNIQUE_TEXTS_ALL = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/all.csv"
-OUTPUT_DIR_UNIQUE_TEXTS_BOYS = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/boys.csv"
-OUTPUT_DIR_UNIQUE_TEXTS_GIRLS = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/girls.csv"
-OUTPUT_DIR_UNIQUE_TEXTS_PRETEEN = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/preteen.csv"
-OUTPUT_DIR_UNIQUE_TEXTS_EARLYTEEN = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/earlyteen.csv"
-OUTPUT_DIR_UNIQUE_TEXTS_TEEN = f"{OUTPUT_DIR_WORDS_BASE}/text_counts/teen.csv"
+OUTPUT_DIR_COUNTS = f"{OUTPUT_DIR_WORDS_BASE}/counts.xlsx"
 
 # Other
 maybe_stopwords = (
@@ -191,6 +180,7 @@ stopwords_extension = (
 
 nlp = Danish()
 stop_words = set(nlp.Defaults.stop_words)
+print(stop_words)
 stop_words.update(stopwords_extension)
 stop_words.update(maybe_stopwords)
 
@@ -202,151 +192,118 @@ min_text_count = 900
 ## HELPER FUNCTIONS ##
 def _count_used_words(
     input_df: pl.DataFrame,
-    output_dir: str,
-    min_count=1,
+    min_word_count=min_word_count,
+    min_text_count=min_text_count
     # logger: logging.Logger
-) -> None:
+) -> tuple[list[tuple[str, int]], list[tuple[str, int]]]:
+    word_counts = Counter()
+    text_counts = Counter()
+
     texts = input_df["msg_tekst"]
     word_counts = Counter()
+    text_counts = Counter()
 
     for text in texts:
-        new_words = re.findall(r"\b[\w']+\b", text.lower())
-        new_words = [word for word in new_words if word not in stop_words]
+        all_words = re.findall(r"\b[\w']+\b", text.lower())
+        new_words = [word for word in all_words if word not in stop_words]
+        new_texts = {word for word in all_words if word not in stop_words}
         word_counts.update(new_words)
+        text_counts.update(new_texts)
 
     filtered_words = Counter({
         word: count
         for word, count in word_counts.items()
-        if count > min_count
+        if count > min_word_count
     })
 
-    output_path = Path(output_dir)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with output_path.open("w", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow(["word", "count"])
-        writer.writerows(filtered_words.most_common())
-
-def _count_texts_with_word(
-    input_df: pl.DataFrame,
-    output_dir: str,
-    min_count=1,
-) -> None:
-    texts = input_df["msg_tekst"]
-    word_counts = Counter()
-
-    for text in texts:
-        new_words = re.findall(r"\b[\w']+\b", text.lower())
-        new_words = {word for word in new_words if word not in stop_words}
-        word_counts.update(new_words)
-
-    filtered_words = Counter({
+    filtered_texts = Counter({
         word: count
-        for word, count in word_counts.items()
-        if count > min_count
+        for word, count in text_counts.items()
+        if count > min_text_count
     })
 
-    output_path = Path(output_dir)
+    return filtered_words.most_common(), filtered_texts.most_common()
+
+def _combine_to_xlsx(
+    counts: dict[str, tuple[list[tuple[str, int]], list[tuple[str, int]]]],
+    output_path: str | Path,
+) -> None:
+    columns = {}
+    for name, (words, conversations) in counts.items():
+        columns[(name, "Words")] = pd.Series(
+            [word for word, _ in words], dtype="string"
+        )
+        columns[(name, "Conversations")] = pd.Series(
+            [word for word, _ in conversations], dtype="string"
+        )
+
+    table = pd.DataFrame(columns)
+    table.columns = range(table.shape[1])
+    output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with output_path.open("w", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow(["word", "count"])
-        writer.writerows(filtered_words.most_common())
+    with pd.ExcelWriter(output_path, engine="xlsxwriter") as writer:
+        table.to_excel(
+            writer,
+            sheet_name="Counts",
+            startrow=2,
+            header=False,
+            index=False,
+        )
+
+        workbook = writer.book
+        sheet = writer.sheets["Counts"]
+
+        group_header = workbook.add_format({
+            "bold": True, "align": "center", "right": 5
+        })
+        subheader = workbook.add_format({"bold": True})
+        subheader_right = workbook.add_format({"bold": True, "right": 5})
+        right_border = workbook.add_format({"right": 5})
+
+        for group_index, name in enumerate(counts):
+            left_col = group_index * 2
+            right_col = left_col + 1
+
+            sheet.merge_range(0, left_col, 0, right_col, name, group_header)
+            sheet.write(1, left_col, "Words", subheader)
+            sheet.write(1, right_col, "Conversations", subheader_right)
+
+            sheet.set_column(left_col, right_col, 24)
+
+            # Format every cell on the group's right edge, including blanks.
+            for row_index in range(len(table)):
+                value = table.iloc[row_index, right_col]
+                excel_row = row_index + 2
+                if pd.isna(value):
+                    sheet.write_blank(excel_row, right_col, None, right_border)
+                else:
+                    sheet.write_string(
+                        excel_row, right_col, value, right_border
+                    )
+
+        sheet.freeze_panes(2, 0)
 ## ________________ ##
 
 
 ## MAIN FUNCTION ##
 def main() -> None:
     """Run the full Derive_Relations_And_Arenas pipeline."""
-    # All
     df = pl.read_parquet(INPUT_DIR_ALL_CONVOS)
-    _count_used_words(
-        input_df = df,
-        output_dir = OUTPUT_DIR_UNIQUE_WORDS_ALL,
-        min_count=min_word_count
-    )
-    _count_texts_with_word(
-        input_df=df,
-        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_ALL,
-        min_count=min_text_count
-    )
-    
-    # Boys
-    df_boys = df.filter(
-        pl.col("gender").eq('male')
-    )
-    _count_used_words(
-        input_df = df_boys,
-        output_dir = OUTPUT_DIR_UNIQUE_WORDS_BOYS,
-        min_count=min_word_count
-    )
-    _count_texts_with_word(
-        input_df=df_boys,
-        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_BOYS,
-        min_count=min_text_count
-    )
+    groups = {
+        "All": df,
+        "Boys": df.filter(pl.col("gender") == "male"),
+        "Girls": df.filter(pl.col("gender") == "female"),
+        "Pre-teens": df.filter(pl.col("age_group") == "pre teen"),
+        "Early-teens": df.filter(pl.col("age_group") == "early teen"),
+        "Teens": df.filter(pl.col("age_group") == "teen"),
+    }
 
-    # Girls
-    df_girls = df.filter(
-        pl.col("gender").eq('female')
-    )
-    _count_used_words(
-        input_df = df_girls,
-        output_dir = OUTPUT_DIR_UNIQUE_WORDS_GIRLS,
-        min_count=min_word_count
-    )
-    _count_texts_with_word(
-        input_df=df_girls,
-        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_GIRLS,
-        min_count=min_text_count
-    )
-
-    # Pre-teens
-    df_preteen = df.filter(
-        pl.col("age_group").eq('pre teen')
-    )
-    _count_used_words(
-        input_df = df_preteen,
-        output_dir = OUTPUT_DIR_UNIQUE_WORDS_PRETEEN,
-        min_count=min_word_count
-    )
-    _count_texts_with_word(
-        input_df=df_preteen,
-        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_PRETEEN,
-        min_count=min_text_count
-    )
-
-    # Early-teens
-    df_earlyteen = df.filter(
-        pl.col("age_group").eq('early teen')
-    )
-    _count_used_words(
-        input_df = df_earlyteen,
-        output_dir = OUTPUT_DIR_UNIQUE_WORDS_EARLYTEEN,
-        min_count=min_word_count
-    )
-    _count_texts_with_word(
-        input_df=df_earlyteen,
-        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_EARLYTEEN,
-        min_count=min_text_count
-    )
-
-    # Teens
-    df_teen = df.filter(
-        pl.col("age_group").eq('teen')
-    )
-    _count_used_words(
-        input_df = df_teen,
-        output_dir = OUTPUT_DIR_UNIQUE_WORDS_TEEN,
-        min_count=min_word_count
-    )
-    _count_texts_with_word(
-        input_df=df_teen,
-        output_dir=OUTPUT_DIR_UNIQUE_TEXTS_TEEN,
-        min_count=min_text_count
-    )
+    counts = {
+        name: _count_used_words(group_df)
+        for name, group_df in groups.items()
+    }
+    _combine_to_xlsx(counts, OUTPUT_DIR_COUNTS)
 
 ## CALL OF MAIN FUNCTION ##
 if __name__ == "__main__":
