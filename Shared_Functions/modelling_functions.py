@@ -236,7 +236,7 @@ def prepare_tsdae_data(
         "test": test_dataset,
     })
 
-    dataset.save_to_disk(output_dir)
+    dataset.save_to_disk(str(output_dir))
 
     return dataset
 

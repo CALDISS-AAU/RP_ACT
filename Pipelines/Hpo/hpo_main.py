@@ -26,9 +26,10 @@ def main():
     )
 
     parser.add_argument(
-        "--dataset-dir",
-        required=True,
-        help="Directory for prepared HF DatasetDict",
+    "--dataset-dir",
+    type=str,
+    default=str(REPO_ROOT / "Pipelines" / "Hpo" / "prepared_dataset"),
+    help="Directory where the prepared HF DatasetDict is saved.",
     )
 
     parser.add_argument(
