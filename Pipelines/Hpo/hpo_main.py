@@ -22,7 +22,7 @@ def main():
     parser.add_argument(
         "--data-path",
         required=True,
-        help="Path to input .parquet file"
+        help="Path to input HF dataset file"
     )
     parser.add_argument(
         "--output-trial-dir",

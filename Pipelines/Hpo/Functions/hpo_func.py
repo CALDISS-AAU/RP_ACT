@@ -147,7 +147,7 @@ def _run_tsdae_hpo(
     log.info("HPO log directory: %s", log_path)
     log.info("Optuna journal: %s", journal_path)
 
-    train_dataset, val_dataset, _ = load_tsdae_training_data(input_path)
+    train_dataset, val_dataset, _ = load_tsdae_training_data(input_path, del_ratio=0.6, seed=1013)
 
     storage = JournalStorage(JournalFileBackend(str(journal_path)))
 

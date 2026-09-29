@@ -220,7 +220,7 @@ def create_hf_dataset(
 
 def prepare_tsdae_data(
     input_dir: str,
-    output_dir: str,
+    output_dir: str = '/work/RP_act/ACT/Data/Tsdae_Train_Data',
 ):
     dataset = pl.read_parquet(input_dir)
 
@@ -242,7 +242,7 @@ def prepare_tsdae_data(
 
 
 def load_tsdae_training_data(
-    dataset_path: str,
+    dataset_path: str = '/work/RP_act/ACT/Data/Tsdae_Train_Data',
     del_ratio: float = 0.6,
     seed: int = 1998,
 ):
