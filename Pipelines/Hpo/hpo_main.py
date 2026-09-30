@@ -64,7 +64,7 @@ def main():
         )
     
     _run_tsdae_hpo(
-        input_dir=args.data_path,
+        input_dir=args.dataset_dir,
         output_dir=args.output_trial_dir,
         log_dir=args.output_dir_logs,
         n_trials=args.n_trials,
