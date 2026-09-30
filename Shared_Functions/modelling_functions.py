@@ -2,11 +2,12 @@
 # External
 import os
 from pathlib import Path
+import random
 import numpy as np
 import faiss
 import polars as pl
 import pandas as pd
-from datasets import Dataset
+from datasets import Dataset, DatasetDict, load_from_disk
 from sentence_transformers import SentenceTransformer, models
 from polars_splitters import split_into_train_eval
 
@@ -171,24 +172,106 @@ def split_data(
 
 # Create Datasets.Dataset
 
+def noise_transform(
+    batch,
+    del_ratio: float = 0.6,
+    text_column: str = 'msg_tekst'
+):
+    noisy = []
+
+    for text in batch[text_column]:
+        words = text.split()
+
+        if len(words) == 0:
+            noisy.append(text)
+            continue
+
+        keep_prob = 1.0 - del_ratio
+
+        kept_words = [
+            word
+            for word in words
+            if random.random() < keep_prob
+        ]
+
+        # Guarantee at least one token survives
+        if len(kept_words) == 0:
+            kept_words = [random.choice(words)]
+
+        noisy.append(" ".join(kept_words))
+
+    return {
+        "noisy": noisy,
+        "text": batch[text_column],
+    }
+
+
 
 def create_hf_dataset(
     df: pl.DataFrame,
-    text_column: str = 'msg_tekst'
+    text_column: str = "msg_tekst",
 ) -> Dataset:
+    texts = df[text_column].to_list()
 
-    texts = df[text_column].to_list()   
     return Dataset.from_dict({
-        "source": texts,
-        "target": texts,
+        text_column: texts,
     })
 
 
-def prepare_tsdae_data(input_dir):  
+def prepare_tsdae_data(
+    input_dir: str,
+    output_dir: str = '/work/RP_act/ACT/Data/Tsdae_Train_Data',
+):
     dataset = pl.read_parquet(input_dir)
+
     train_df, val_df, test_df = split_data(dataset)
 
     train_dataset = create_hf_dataset(train_df)
     val_dataset = create_hf_dataset(val_df)
+    test_dataset = create_hf_dataset(test_df)
 
-    return train_dataset, val_dataset, test_df
+    dataset = DatasetDict({
+        "train": train_dataset,
+        "validation": val_dataset,
+        "test": test_dataset,
+    })
+
+    dataset.save_to_disk(str(output_dir))
+
+    return dataset
+
+
+def load_tsdae_training_data(
+    dataset_path: str = '/work/RP_act/ACT/Data/Tsdae_Train_Data',
+    del_ratio: float = 0.6,
+    seed: int = 1998,
+):
+    dataset = load_from_disk(dataset_path)
+
+    train_dataset = dataset["train"]
+    val_dataset = dataset["validation"]
+    test_dataset = dataset["test"]
+
+    # Dynamic noise during training
+    train_dataset.set_transform(
+        lambda batch: noise_transform(
+            batch,
+            del_ratio=del_ratio,
+        ),
+        columns=["msg_tekst"],
+        output_all_columns=False,
+    )
+
+    # Fixed validation corruption
+    random.seed(seed)
+
+    val_dataset = val_dataset.map(
+        lambda batch: noise_transform(
+            batch,
+            del_ratio=del_ratio,
+        ),
+        batched=True,
+        remove_columns=val_dataset.column_names
+    )
+
+    return train_dataset, val_dataset, test_dataset

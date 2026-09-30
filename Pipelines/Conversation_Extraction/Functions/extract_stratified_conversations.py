@@ -457,6 +457,7 @@ def _save_conversation_to_docx(
 
     doc = Document()
 
+    doc.add_paragraph(f"Samtale ID : {row['conversation_code']}")
     doc.add_paragraph(f"Køn : {row['requester_gender_name']}")
     doc.add_paragraph(f"Alder : {row['requester_age_name']}")
     doc.add_paragraph(f"Henvendelsesårsager : {row['contact_reasons']}")
@@ -497,6 +498,16 @@ def _log_selected_distribution(
     logger: logging.Logger,
 ) -> None:
     """Log topic distribution and average wordcount for selected rows."""
+    conversation_ids = [
+        row["conversation_code"]
+        for row in selected_rows
+    ]
+
+    logger.info(
+        f"Selected conversation IDs for gender={gender}, "
+        f"age_group={age_group}: {conversation_ids}"
+    )
+
     topic_counts = _calculate_topic_counts(
         rows=selected_rows,
         topic_contact_reasons=topic_contact_reasons,
@@ -585,6 +596,11 @@ def _format_export_summary(
             )
         )
 
+        conversation_ids = [
+            str(row["conversation_code"])
+            for row in selected_rows
+        ]
+
         lines.extend(
             [
                 f"Gender: {gender}",
@@ -592,6 +608,16 @@ def _format_export_summary(
                 f"Total conversations: {len(selected_rows)}",
                 f"Average wordcount: "
                 f"{_calculate_average_wordcount(selected_rows):.1f}",
+                "",
+                "Selected conversation IDs:",
+            ]
+        )
+
+        for conversation_id in conversation_ids:
+            lines.append(f"- {conversation_id}")
+
+        lines.extend(
+            [
                 "",
                 "Topic distribution:",
             ]
@@ -611,16 +637,17 @@ def _format_export_summary(
         )
 
         for topic, contact_reasons in unique_contact_reasons_by_topic.items():
-            lines.append(
-                f"- {topic}: {len(contact_reasons)}"
-            )
+            lines.append(f"- {topic}: {len(contact_reasons)}")
 
-        lines.append("")
-        lines.append("-" * 40)
-        lines.append("")
+        lines.extend(
+            [
+                "",
+                "-" * 40,
+                "",
+            ]
+        )
 
     return "\n".join(lines)
-
 
 def _save_export_summary(
     summary_text: str,

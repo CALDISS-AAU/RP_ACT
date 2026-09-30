@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ACT"
 version = "0.1.0"
@@ -23,11 +27,14 @@ dependencies = [
     "faiss-cpu>=1.15.0",
     "mistralai>=2.10.0",
     "rich>=15.0.0",
+    "spacy>=3.8.16",
     "seaborn>=0.13.2",
 ]
 
 [project.scripts]
-create-pipeline = "Shared_Functions.pipeline_generator:main"
+create-pipeline = "Shared_Functions.Pipeline_Functions.pipeline_generator:main"
+clear-pipeline = "Shared_Functions.Pipeline_Functions.wipe_pipeline_data:main"
 
-[tool.setuptools]
-packages = ["Shared_Functions"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["Shared_Functions*"]
