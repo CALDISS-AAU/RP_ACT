@@ -271,6 +271,7 @@ def load_tsdae_training_data(
             del_ratio=del_ratio,
         ),
         batched=True,
+        remove_columns=val_dataset.column_names
     )
 
     return train_dataset, val_dataset, test_dataset
