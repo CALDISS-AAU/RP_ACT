@@ -17,9 +17,11 @@ Pipelines/*/Data/*
 Pipelines/*/modelling/*
 Pipelines/validation/Functions/Results/
 Pipelines/validation/Results/
+Pipelines/Hpo/prepared_dataset/
 
 # Logs
 Pipelines/*/Logs/*
+Pipelines/Hpo/from_runs
 
 # uv
 .lock
