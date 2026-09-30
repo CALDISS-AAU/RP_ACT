@@ -26,10 +26,10 @@ def main():
     )
 
     parser.add_argument(
-    "--dataset-dir",
-    type=str,
-    default=str(REPO_ROOT / "Pipelines" / "Hpo" / "prepared_dataset"),
-    help="Directory where the prepared HF DatasetDict is saved.",
+        "--dataset-dir",
+        type=str,
+        default=str(REPO_ROOT / "Pipelines" / "Hpo" / "prepared_dataset"),
+        help="Directory where the prepared HF DatasetDict is saved.",
     )
 
     parser.add_argument(
@@ -37,15 +37,18 @@ def main():
         required=True,
         help="Path to input HF dataset file"
     )
+
     parser.add_argument(
         "--output-trial-dir",
         default=(REPO_ROOT / "Pipelines" / "Hpo" / "output")
     )
+
     parser.add_argument(
         '--output-dir-logs',
         default=str(REPO_ROOT / "Pipelines" / 'Hpo' / "Logs"),
         help="Directory for storing HPO trial outputs",
     )
+
     parser.add_argument(
         "--n-trials",
         type=int,
@@ -53,6 +56,13 @@ def main():
         help=(
             "Number of trials to run in this worker"
         ),
+    )
+
+    parser.add_argument(
+        "--max_seq_length",
+        type=int,
+        default=128,
+        help="Max sequence length of texts - should be 128 for messages and 1024 for conversations."
     )
 
     args = parser.parse_args()
@@ -68,7 +78,8 @@ def main():
         output_dir=args.output_trial_dir,
         log_dir=args.output_dir_logs,
         n_trials=args.n_trials,
-        )
+        max_seq_length=args.max_seq_length
+    )
 
 
 if __name__ == "__main__":

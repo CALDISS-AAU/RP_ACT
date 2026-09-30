@@ -33,13 +33,13 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def _hpo_model_init():
+def _hpo_model_init(max_seq_length: int):
     """
     Create a fresh model for every Optuna trial.
     """
     return build_sentence_transformer(
         model_name="BAAI/bge-m3",
-        max_seq_length=1024,
+        max_seq_length=max_seq_length,
         pooling_mode="mean",
     )
 
@@ -108,6 +108,7 @@ def _run_tsdae_hpo(
     output_dir,
     log_dir,
     n_trials=4,
+    max_seq_length=128,
 ):
     """
     Run the TSDAE Optuna study.
@@ -185,7 +186,7 @@ def _run_tsdae_hpo(
         trainer = None
 
         try:
-            model = _hpo_model_init()
+            model = _hpo_model_init(max_seq_length=max_seq_length)
             loss = _hpo_loss_init(model)
 
             training_args = SentenceTransformerTrainingArguments(
@@ -200,7 +201,7 @@ def _run_tsdae_hpo(
                 eval_strategy="epoch",
                 save_strategy="no",
                 logging_steps=50,
-                dataloader_num_workers=8,
+                dataloader_num_workers=2,
                 dataloader_drop_last=True,
                 run_name=f"tsdae_hpo_trial_{trial.number}",
                 report_to="none",
@@ -254,6 +255,11 @@ def _run_tsdae_hpo(
     log.info(
         "Starting TSDAE HPO with %d trials for this worker",
         n_trials,
+    )
+
+    log.info(
+        "Using max_seq_length %d",
+        max_seq_length
     )
 
     study.optimize(
