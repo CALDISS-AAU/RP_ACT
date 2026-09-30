@@ -257,7 +257,9 @@ def load_tsdae_training_data(
         lambda batch: noise_transform(
             batch,
             del_ratio=del_ratio,
-        )
+        ),
+        columns=["msg_tekst"],
+        output_all_columns=False,
     )
 
     # Fixed validation corruption
