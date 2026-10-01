@@ -65,6 +65,14 @@ def main():
         help="Max sequence length of texts - should be 128 for messages and 1024 for conversations."
     )
 
+    parser.add_argument(
+        "--study_name",
+        type=str,
+        default="Study_name",
+        required=True,
+        help="Give a unique study name",
+    )
+
     args = parser.parse_args()
 
     if args.prepare_data:
@@ -78,7 +86,8 @@ def main():
         output_dir=args.output_trial_dir,
         log_dir=args.output_dir_logs,
         n_trials=args.n_trials,
-        max_seq_length=args.max_seq_length
+        max_seq_length=args.max_seq_length,
+        study_name=args.study_name
     )
 
 

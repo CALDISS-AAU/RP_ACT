@@ -20,6 +20,7 @@ LOGFILE_GPU1="$LOG_DIR/hpo_gpu1_${TIMESTAMP}.log"
 CUDA_VISIBLE_DEVICES=0 uv run Pipelines/Hpo/hpo_main.py \
   --data-path "/work/RP_act/ACT/Data/Clean_Combine/collapsed_messages_data.parquet" \
   --prepare-data \
+  --study_name "collapsed_small_batch_gpu" \
   --output-dir-logs "/work/JosefineMarianneChristensen#0406/RP_ACT/Pipelines/Hpo/from_runs/collapsed_message_level_hpo/Logs" \
   --output-trial-dir "/work/JosefineMarianneChristensen#0406/RP_ACT/Pipelines/Hpo/from_runs/output_collapsed_messages" \
   2>&1 | tee "$LOGFILE_GPU0" &
@@ -29,6 +30,7 @@ PID_GPU0=$!
 CUDA_VISIBLE_DEVICES=1 uv run Pipelines/Hpo/hpo_main.py \
   --data-path "/work/RP_act/ACT/Data/Clean_Combine/collapsed_messages_data.parquet" \
   --prepare-data \
+  --study_name "collapsed_small_batch_gpu" \
   --output-dir-logs "/work/JosefineMarianneChristensen#0406/RP_ACT/Pipelines/Hpo/from_runs/collapsed_message_level_hpo/Logs" \
   --output-trial-dir "/work/JosefineMarianneChristensen#0406/RP_ACT/Pipelines/Hpo/from_runs/output_collapsed_messages" \
   2>&1 | tee "$LOGFILE_GPU1" &
