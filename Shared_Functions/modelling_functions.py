@@ -7,9 +7,7 @@ import numpy as np
 import faiss
 import polars as pl
 import pandas as pd
-from datasets import Dataset, DatasetDict, load_from_disk
 from sentence_transformers import SentenceTransformer, models
-from polars_splitters import split_into_train_eval
 
 import nltk
 nltk.download('punkt_tab')
@@ -118,57 +116,10 @@ def build_sentence_transformer(
         modules=[base_model, pooling_model]
     )
 
-# Splitter
 
 
-def split_data(
-    df: pl.DataFrame,
-    val_size: float = 0.15,
-    test_size: float = 0.15,
-    seed: int = 1849,
-    base_dir: str = '/work/RP_act/ACT/Data/splits'
-) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
-    """
-    Split a Polars DataFrame into stratified train, validation, and test sets.
 
-    The data is stratified by gender and age group to preserve their
-    distributions across the resulting splits. The seed controls the
-    random shuffling and makes the split reproducible.
 
-    Args:
-        df: DataFrame to split.
-        val_size: Proportion of the data assigned to the validation set.
-        test_size: Proportion of the data assigned to the test set.
-        seed: Random seed used for reproducible splitting.
-
-    Returns:
-        A tuple containing the train, validation, and test DataFrames,
-        respectively.
-    """
-    
-    output_dir = Path(base_dir) / f"seed_{seed}"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    train_df, temp_df = split_into_train_eval(
-        df,
-        eval_rel_size=val_size + test_size,
-        stratify_by=['gender', 'age_group'],
-        shuffle=True,
-        seed=seed
-    )
-    val_df, test_df = split_into_train_eval(
-        temp_df,
-        eval_rel_size=test_size / (val_size + test_size),
-        stratify_by=['gender', 'age_group'],
-        shuffle=True,
-        seed=seed
-    )
-
-    train_df.write_parquet(output_dir / "train.parquet")
-    val_df.write_parquet(output_dir / "val.parquet")
-    test_df.write_parquet(output_dir / "test.parquet")
-
-    return train_df, val_df, test_df
 
 # Create Datasets.Dataset
 
@@ -204,42 +155,6 @@ def noise_transform(
         "noisy": noisy,
         "text": batch[text_column],
     }
-
-
-
-def create_hf_dataset(
-    df: pl.DataFrame,
-    text_column: str = "msg_tekst",
-) -> Dataset:
-    texts = df[text_column].to_list()
-
-    return Dataset.from_dict({
-        text_column: texts,
-    })
-
-
-def prepare_tsdae_data(
-    input_dir: str,
-    output_dir: str = '/work/RP_act/ACT/Data/Tsdae_Train_Data',
-):
-    dataset = pl.read_parquet(input_dir)
-
-    train_df, val_df, test_df = split_data(dataset)
-
-    train_dataset = create_hf_dataset(train_df)
-    val_dataset = create_hf_dataset(val_df)
-    test_dataset = create_hf_dataset(test_df)
-
-    dataset = DatasetDict({
-        "train": train_dataset,
-        "validation": val_dataset,
-        "test": test_dataset,
-    })
-
-    dataset.save_to_disk(str(output_dir))
-
-    return dataset
-
 
 def load_tsdae_training_data(
     dataset_path: str = '/work/RP_act/ACT/Data/Tsdae_Train_Data',
