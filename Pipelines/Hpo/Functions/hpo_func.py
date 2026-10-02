@@ -71,7 +71,7 @@ def _hpo_search_space(trial):
         ),
         "per_device_train_batch_size": trial.suggest_categorical(
             "per_device_train_batch_size",
-            [16, 32],
+            [4, 8, 16],
         ),
         "warmup_ratio": trial.suggest_float(
             "warmup_ratio",
@@ -109,6 +109,7 @@ def _run_tsdae_hpo(
     log_dir,
     n_trials=4,
     max_seq_length=128,
+    study_name="Study_name"
 ):
     """
     Run the TSDAE Optuna study.
@@ -153,7 +154,7 @@ def _run_tsdae_hpo(
     storage = JournalStorage(JournalFileBackend(str(journal_path)))
 
     study = optuna.create_study(
-        study_name="tsdae_hpo",
+        study_name=study_name,
         direction="minimize",
         storage=storage,
         load_if_exists=True,
@@ -201,7 +202,7 @@ def _run_tsdae_hpo(
                 eval_strategy="epoch",
                 save_strategy="no",
                 logging_steps=50,
-                dataloader_num_workers=2,
+                dataloader_num_workers=0,
                 dataloader_drop_last=True,
                 run_name=f"tsdae_hpo_trial_{trial.number}",
                 report_to="none",

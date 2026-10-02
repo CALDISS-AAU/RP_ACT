@@ -21,6 +21,7 @@ CUDA_VISIBLE_DEVICES=0 uv run Pipelines/Hpo/hpo_main.py \
   --data-path "/work/RP_act/ACT/Data/Clean_Combine/conversation_data.parquet" \
   --prepare-data \
   --max_seq_length 1024 \
+  --study_name "conversations_small_batch_gpu" \
   --output-dir-logs "/work/JosefineMarianneChristensen#0406/RP_ACT/Pipelines/Hpo/from_runs/conversation_level_hpo/Logs" \
   --output-trial-dir "/work/JosefineMarianneChristensen#0406/RP_ACT/Pipelines/Hpo/from_runs/output_conversations" \
   2>&1 | tee "$LOGFILE_GPU0" &
@@ -31,6 +32,7 @@ CUDA_VISIBLE_DEVICES=1 uv run Pipelines/Hpo/hpo_main.py \
   --data-path "/work/RP_act/ACT/Data/Clean_Combine/conversation_data.parquet" \
   --prepare-data \
   --max_seq_length 1024 \
+  --study_name "conversations_small_batch_gpu" \
   --output-dir-logs "/work/JosefineMarianneChristensen#0406/RP_ACT/Pipelines/Hpo/from_runs/conversation_level_hpo/Logs" \
   --output-trial-dir "/work/JosefineMarianneChristensen#0406/RP_ACT/Pipelines/Hpo/from_runs/output_conversations" \
   2>&1 | tee "$LOGFILE_GPU1" &

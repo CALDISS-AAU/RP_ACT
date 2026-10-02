@@ -15,7 +15,7 @@ REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
 def main():
     parser = argparse.ArgumentParser(description="Train TSDAE model")
     parser.add_argument(
-        "--data-path", required=True, help="Path to saved Hugging Face Dataset"
+        "--dataset-dir", required=True, help="Path to saved Hugging Face Dataset"
     )
     parser.add_argument(
         "--output-dir-logs",
