@@ -2,6 +2,7 @@
 
 # External
 import argparse
+from datasets import load_dataset, load_from_disk
 
 # Internal
 from Functions.ire_func import (
@@ -34,10 +35,23 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--local-files-only",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        )
+
+    parser.add_argument(
         "--dataset-path",
         type=str,
         required=True,
         help="Path to Datasets.dataset"
+    )
+
+    parser.add_argument(
+        "--name",
+        type=str,
+        required=True,
+        help="Name for IRE evaluation"
     )
 
     return parser.parse_args()
@@ -47,7 +61,7 @@ def main():
 
     args = parse_args()
 
-    model = _load_model(args.model_path)
+    model = _load_model(args.model_path, args.local_files_only)
 
     corpus, queries, relevant_docs = _create_corpus(args.dataset_path)
 
@@ -56,7 +70,8 @@ def main():
         queries=queries,
         relevant_docs=relevant_docs,
         model=model,
-        output_path=args.output_path
+        output_path=args.output_path,
+        name=args.name
     )
     
 

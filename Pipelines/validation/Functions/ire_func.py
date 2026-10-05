@@ -8,10 +8,7 @@ from sentence_transformers.sentence_transformer.evaluation import (
     InformationRetrievalEvaluator,
 )
 
-from Shared_Functions.modelling_functions import (
-    split_data,
-    load_tsdae_training_data,
-)
+from Shared_Functions.modelling_functions import load_tsdae_training_data
 
 logging.basicConfig(
     format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO

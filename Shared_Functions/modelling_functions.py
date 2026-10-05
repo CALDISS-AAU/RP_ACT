@@ -7,6 +7,7 @@ import numpy as np
 import faiss
 import polars as pl
 import pandas as pd
+from datasets import load_dataset, load_from_disk
 from sentence_transformers import SentenceTransformer, models
 
 import nltk
