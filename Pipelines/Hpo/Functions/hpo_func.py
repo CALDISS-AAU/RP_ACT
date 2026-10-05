@@ -80,8 +80,11 @@ def _hpo_search_space(trial):
         ),
         "learning_rate": trial.suggest_float(
             "learning_rate",
+            5e-6,
             1e-6,
             5e-5,
+            1e-5,
+            5e-4,
             log=True,
         ),
         "weight_decay": trial.suggest_float(
@@ -91,7 +94,7 @@ def _hpo_search_space(trial):
         ),
         "max_grad_norm": trial.suggest_categorical(
             "max_grad_norm",
-            [0.5, 1.0, 2.0],
+            [0.5, 1.0, 2.0, 2.5, 3.0],
         ),
     }
 

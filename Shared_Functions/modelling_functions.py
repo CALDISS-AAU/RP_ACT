@@ -8,6 +8,8 @@ import faiss
 import polars as pl
 import pandas as pd
 from sentence_transformers import SentenceTransformer, models
+from datasets import load_from_disk
+
 
 import nltk
 nltk.download('punkt_tab')

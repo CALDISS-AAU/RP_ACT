@@ -52,7 +52,7 @@ def main():
         noise_seed=args.noise_seed,
     )
 
-    _train_model(input_dir=args.data_path, config=config)
+    _train_model(input_dir=args.dataset_dir, config=config)
 
 
 if __name__ == "__main__":
