@@ -20,6 +20,7 @@ from sentence_transformers.trainer import SentenceTransformerTrainer
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
     prepare_tsdae_data,
+    load_tsdae_training_data
 )
 
 
@@ -32,13 +33,13 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def _hpo_model_init():
+def _hpo_model_init(max_seq_length: int):
     """
     Create a fresh model for every Optuna trial.
     """
     return build_sentence_transformer(
         model_name="BAAI/bge-m3",
-        max_seq_length=128,
+        max_seq_length=max_seq_length,
         pooling_mode="mean",
     )
 
@@ -70,7 +71,7 @@ def _hpo_search_space(trial):
         ),
         "per_device_train_batch_size": trial.suggest_categorical(
             "per_device_train_batch_size",
-            [16, 32],
+            [4, 8, 16],
         ),
         "warmup_ratio": trial.suggest_float(
             "warmup_ratio",
@@ -79,8 +80,11 @@ def _hpo_search_space(trial):
         ),
         "learning_rate": trial.suggest_float(
             "learning_rate",
+            5e-6,
             1e-6,
             5e-5,
+            1e-5,
+            5e-4,
             log=True,
         ),
         "weight_decay": trial.suggest_float(
@@ -90,7 +94,7 @@ def _hpo_search_space(trial):
         ),
         "max_grad_norm": trial.suggest_categorical(
             "max_grad_norm",
-            [0.5, 1.0, 2.0],
+            [0.5, 1.0, 2.0, 2.5, 3.0],
         ),
     }
 
@@ -106,7 +110,9 @@ def _run_tsdae_hpo(
     input_dir,
     output_dir,
     log_dir,
-    n_trials=5,
+    n_trials=4,
+    max_seq_length=128,
+    study_name="Study_name"
 ):
     """
     Run the TSDAE Optuna study.
@@ -114,7 +120,7 @@ def _run_tsdae_hpo(
     Parameters
     ----------
     input_dir:
-        Path to the input parquet dataset.
+        Path to the input HF dataset.
 
     output_dir:
         Directory for per-trial Trainer output.
@@ -146,12 +152,12 @@ def _run_tsdae_hpo(
     log.info("HPO log directory: %s", log_path)
     log.info("Optuna journal: %s", journal_path)
 
-    train_dataset, val_dataset, _ = prepare_tsdae_data(input_path)
+    train_dataset, val_dataset, _ = load_tsdae_training_data(input_path, del_ratio=0.6, seed=1013)
 
     storage = JournalStorage(JournalFileBackend(str(journal_path)))
 
     study = optuna.create_study(
-        study_name="tsdae_hpo",
+        study_name=study_name,
         direction="minimize",
         storage=storage,
         load_if_exists=True,
@@ -184,7 +190,7 @@ def _run_tsdae_hpo(
         trainer = None
 
         try:
-            model = _hpo_model_init()
+            model = _hpo_model_init(max_seq_length=max_seq_length)
             loss = _hpo_loss_init(model)
 
             training_args = SentenceTransformerTrainingArguments(
@@ -199,7 +205,7 @@ def _run_tsdae_hpo(
                 eval_strategy="epoch",
                 save_strategy="no",
                 logging_steps=50,
-                dataloader_num_workers=8,
+                dataloader_num_workers=0,
                 dataloader_drop_last=True,
                 run_name=f"tsdae_hpo_trial_{trial.number}",
                 report_to="none",
@@ -253,6 +259,11 @@ def _run_tsdae_hpo(
     log.info(
         "Starting TSDAE HPO with %d trials for this worker",
         n_trials,
+    )
+
+    log.info(
+        "Using max_seq_length %d",
+        max_seq_length
     )
 
     study.optimize(

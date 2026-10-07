@@ -18,7 +18,7 @@ from Pipelines.Data_Stats_Extraction.data_stats_extraction_main import main as d
 ## MAIN FUNCTION ##
 def main() -> None:
     clean_combine_main()
-    conversation_extraction_main()
+    # conversation_extraction_main()
     data_stats_extraction_main()
 ## _____________ ##
 

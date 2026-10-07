@@ -5,7 +5,6 @@ This script trains a TSDAE model on RP_ACT data on the message level.
 # IMPORTS #
 # External
 from dataclasses import dataclass
-import polars as pl
 from sentence_transformers.losses import DenoisingAutoEncoderLoss
 from sentence_transformers.trainer import SentenceTransformerTrainer
 from sentence_transformers.training_args import (
@@ -14,8 +13,7 @@ from sentence_transformers.training_args import (
 # Internal
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
-    split_data,
-    create_hf_dataset,
+    load_tsdae_training_data
 )
 
 # Classes
@@ -32,8 +30,12 @@ class TSDEATrainingConfig:
     batch_size: int = 32
     learning_rate: float = 2e-5
     warmup_ratio: float = 0.1
-    max_grad_norm: float = (1.0,)
-    weight_decay: float = (0.01,)
+    max_grad_norm: float = 1.0
+    weight_decay: float = 0.01
+    noise_seed: int = 1998
+    del_ratio: float = 0.6
+
+    
 
 
 # STATIC VARIABLES #
@@ -73,12 +75,12 @@ def _train_tsdae(
     model,
     train_dataset,
     val_dataset,
-    config: TSDEATrainingConfig
+    config: TSDEATrainingConfig,
 ):
     loss = DenoisingAutoEncoderLoss(
         model,
-        tie_encoder_decoder=True
-        )
+        tie_encoder_decoder=True,
+    )
 
     args = _build_training_args(
         config.output_dir,
@@ -99,30 +101,43 @@ def _train_tsdae(
     )
 
     train_result = trainer.train()
+
     eval_metrics = trainer.evaluate(
         eval_dataset=val_dataset,
     )
 
-    print(f"Training metrics: %s, {train_result.metrics}")
-    print(f"Validation metrics: %s, {eval_metrics}")
-    print(f"Validation loss: %.6f,{eval_metrics['eval_loss']:.6f}")
+    print(f"Training metrics: {train_result.metrics}")
+    print(f"Validation metrics: {eval_metrics}")
+    print(f"Validation loss: {eval_metrics['eval_loss']:.6f}")
+
     model.save_pretrained(config.output_dir)
+
     return model
 
 
-def _train_model(input_dir, config):
+def _train_model(
+    input_dir,
+    config: TSDEATrainingConfig,
+):
     model = build_sentence_transformer()
-    dataset = pl.read_parquet(input_dir)
-    train_df, val_df, test_df = split_data(dataset)
-    train_dataset = create_hf_dataset(train_df)
 
-    val_dataset = create_hf_dataset(val_df)
-    # config = TSDEATrainingConfig(output_dir=output_dir)
+    train_dataset, val_dataset, _ = load_tsdae_training_data(
+        dataset_path=input_dir,
+        del_ratio=config.del_ratio,
+        seed=config.noise_seed
+    )
+
+    print("TRAIN 1:", train_dataset[0])
+    print("TRAIN 2:", train_dataset[0])
+
+    print("VAL 1:", val_dataset[0])
+    print("VAL 2:", val_dataset[0])
+
     model = _train_tsdae(
-        model,
-        train_dataset,
-        val_dataset,
-        config
-        )
+        model=model,
+        train_dataset=train_dataset,
+        val_dataset=val_dataset,
+        config=config,
+    )
 
     return model
