@@ -2,6 +2,8 @@
 import argparse
 import os
 from pathlib import Path
+
+from multiprocessing import Pool
 # Internal imports
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
@@ -92,4 +94,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    with Pool(processes=4) as pool:
+        pool.map(main(), range=(16))
