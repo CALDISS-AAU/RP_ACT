@@ -24,7 +24,13 @@ def _combine_data(input_dir: str, logger: logging.Logger) -> pd.DataFrame:
 
     dfs = []
     for file in Path(input_dir).rglob("*.csv"):
-        dfs.append(pd.read_csv(file, sep=";"))
+        df = pd.read_csv(file, sep=";")
+        logger.info(f'This dataset ({file}) contains the following columns: {df.columns}')
+        if 'Kolonne1' in df.columns:
+            logger.info(f'All unique Kolonne1 values: {df['Kolonne1'].unique()}')
+            df = df.drop(columns=['Kolonne1'])
+            logger.info(f'All columns of {file} after dropping Kolonne1: {df.columns}')
+        dfs.append(df)
 
     logger.info(f"There's a total of {len(dfs)} files in total.")
 
@@ -95,13 +101,18 @@ def _remove_ages_out_of_range(dataframe: pd.DataFrame, logger: logging.Logger) -
 def _clean_data(dataframe: pd.DataFrame, logger: logging.Logger) -> pd.DataFrame:
     """Apply filtering and type conversions to the combined dataframe."""
 
+    map = {
+        "SAND": True,
+        "FALSK": False
+    }
+    dataframe["is_incoming"] = dataframe["is_incoming"].map(map)
     dataframe_step1 = _remove_empty_texts(dataframe, logger)
     dataframe_step2 = _remove_regular_users(dataframe_step1, logger)
     dataframe_step3 = _remove_ages_out_of_range(dataframe_step2, logger)
     dataframe_step3["is_incoming"] = dataframe_step3["is_incoming"].astype(bool)
     logger.info("'is_incoming' is now a bool")
-    dataframe_step3["last_contact"] = pd.to_datetime(dataframe_step3["last_contact"], utc=True)
-    dataframe_step3["msg_created_on"] = pd.to_datetime(dataframe_step3["msg_created_on"], utc=True)
+    dataframe_step3["last_contact"] = pd.to_datetime(dataframe_step3["last_contact"], format="%d-%m-%Y %H:%M", utc=True)
+    dataframe_step3["msg_created_on"] = pd.to_datetime(dataframe_step3["msg_created_on"], format="%d-%m-%Y %H:%M", utc=True)
     logger.info("'last_contact' and 'msg_created_on' are now datetimes")
 
     clean_dataframe = dataframe_step3
