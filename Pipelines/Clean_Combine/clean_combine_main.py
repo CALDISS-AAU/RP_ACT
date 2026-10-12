@@ -111,6 +111,7 @@ def main() -> None:
         step_log_paths=[
             OUTPUT_DIR_LOG_INSPECTION,
             OUTPUT_DIR_LOG_CLEAN_AND_COMBINE,
+            OUTPUT_DIR_LOG_CLEAN_AND_COMBINE_EVALUATION,
             OUTPUT_DIR_LOG_WORKING_DATASETS,
         ],
         output_dir_log=OUTPUT_DIR_LOG_FULL_PIPELINE,
