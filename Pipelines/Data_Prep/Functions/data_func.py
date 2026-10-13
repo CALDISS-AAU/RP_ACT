@@ -66,6 +66,7 @@ def _create_hf_dataset(
 def _prepare_tsdae_data(
     data_path: str,
     base_dir: str | Path,
+    embeddings_path: str,
     name: str = "working_data",
     seed: int = 1849,
     save_split_parquets: bool = False,
@@ -76,6 +77,18 @@ def _prepare_tsdae_data(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     dataset = pl.read_parquet(data_path)
+    
+    embeddings = np.load(embedding_path)
+    print("df rows:", len(dataset))
+    print("embedding rows:", len(embeddings))
+
+    # Merging embeddings back to dataframe
+    assert len(df) == len(embeddings), (
+        "Number of dataframe rows does not match number of embeddings"
+    )
+
+    dataset = dataset.copy()
+    dataset["embedding"] = list(embeddings)
 
     train_df, val_df, test_df = _split_data(
         dataset,

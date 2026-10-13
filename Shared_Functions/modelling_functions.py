@@ -17,10 +17,12 @@ nltk.download('punkt_tab')
 
 
 def calc_embeddings(
+    device: list[str],
     data_path: str = '/work/RP_act/ACT/Data/Clean_Combine/message_data.parquet',
     model_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-messagelvl",
     output_path: str = "/work/RP_act/ACT/Data/embeddings",
     filename: str = "msg_lvl_embeddings",
+    batch_size: int = 8,
     normalize_embeddings: bool = True,
     local_files_only: bool = True
 ):
@@ -30,23 +32,39 @@ def calc_embeddings(
 
     model = SentenceTransformer(model_path, local_files_only=local_files_only)
 
-    embeddings = model.encode(
-        df["msg_tekst"].tolist(),
-        normalize_embeddings=normalize_embeddings,
-        show_progress_bar=True,
-    ).astype('float32')
+    try:
 
-    # Save as Numpy array
-    np.save(output_path / f"{filename}.npy", embeddings)
 
-    # Save as FAISS because why not?
-    index = faiss.IndexFlatIP(embeddings.shape[1])
-    index.add(embeddings)
+        embeddings = model.encode(
+            df["msg_tekst"].tolist(),
+            normalize_embeddings=normalize_embeddings,
+            batch_size=batch_size,
+            device=devices,
+            show_progress_bar=True,
+        ).astype('float32')
 
-    faiss.write_index(
-    index,
-    str(output_path / f"{filename}.faiss")
-)
+        # Save as Numpy array
+        np.save(output_path / f"{filename}.npy", embeddings)
+
+        # Save as FAISS because why not?
+        index = faiss.IndexFlatIP(embeddings.shape[1])
+        index.add(embeddings)
+
+        faiss.write_index(
+        index,
+        str(output_path / f"{filename}.faiss")
+    )
+
+        print(f"Saved embeddings: {filename}")
+        print(f"Embedding shape: {embeddings.shape}")
+
+
+    finally:
+        del model
+        gc.collect()
+
+        if torch.cuda.is_available():
+            toch.cuda.empty_cache()
 
 def calc_mistral_embeddings(
     data_path: str = '/work/RP_act/ACT/Data/Clean_Combine/message_data.parquet',
@@ -118,11 +136,6 @@ def build_sentence_transformer(
     return SentenceTransformer(
         modules=[base_model, pooling_model]
     )
-
-
-
-
-
 
 # Create Datasets.Dataset
 
