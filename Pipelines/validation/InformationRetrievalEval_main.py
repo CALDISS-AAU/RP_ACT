@@ -8,7 +8,8 @@ from datasets import load_dataset, load_from_disk
 from Functions.ire_func import (
     _load_model,
     _create_corpus,
-    _InformationRetrievalEvaluator_builder
+    _InformationRetrievalEvaluator_builder,
+    _create_group_ir_data
 )
 
 # Internals
@@ -54,6 +55,13 @@ def parse_args():
         help="Name for IRE evaluation"
     )
 
+    parser.add_argument(
+        "--group-column",
+        type=str,
+        default=None,
+        help="Column for subroup filtering"
+    )
+
     return parser.parse_args()
 
 
@@ -74,6 +82,23 @@ def main():
         name=args.name
     )
     
+    # Gender + age_group testing
+    if args.group_column:
+
+        corpus, groups = create_group_ir_data(
+            val_dataset,
+            group_column=args.group_column,
+        )
+
+    for group_value, data in groups.items():
+        results = _InformationRetrievalEvaluator_builder(
+            model=model,
+            corpus=corpus,
+            queries=data['queries'],
+            relevant_docs=data['relevant_docs'],
+            name=f"{args.name}_{args.group_column}_{group_value}",
+            output_path=args.output_path
+        )
 
 if __name__ == "__main__":
     main()

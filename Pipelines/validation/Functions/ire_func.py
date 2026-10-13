@@ -16,6 +16,10 @@ logging.basicConfig(
 
 
 def _load_model(model_path: str, local_files_only: bool = True):
+    """
+    Load a pretrained SentenceTransformer model.
+    input: Path (either local or HF-id) to model
+    """
     model = SentenceTransformer(model_path, local_files_only=local_files_only)
 
     return model
@@ -63,7 +67,44 @@ def _create_corpus(dataset_path: str):
         for rid in val_dataset["retrieval_id"]
     }
 
-    return corpus, queries, relevant_docs
+    return val_dataset, corpus, queries, relevant_docs
+
+def _create_group_ir_data(dataset, group_column: str):
+    corpus = dict(
+        zip(
+            dataset["retrieval_id"],
+            dataset["text"],
+        )
+    )
+
+    groups = {}
+
+    for group_value in sorted(set(dataset[group_column])):
+        group_dataset = dataset.filter(
+            lambda x: x[group_column] == group_value
+        )
+
+        queries = {
+            f"q_{rid}": noisy
+            for rid, noisy in zip(
+                group_dataset["retrieval_id"],
+                group_dataset["noisy"],
+            )
+        }
+
+        relevant_docs = {
+            f"q_{rid}": {rid}
+            for rid in group_dataset["retrieval_id"]
+        }
+
+        groups[group_value] = {
+            "queries": queries,
+            "relevant_docs": relevant_docs,
+            "n_queries": len(group_dataset),
+        }
+
+    return corpus, groups
+
 
 def _InformationRetrievalEvaluator_builder(
     model,
@@ -71,14 +112,15 @@ def _InformationRetrievalEvaluator_builder(
     corpus,
     relevant_docs,
     name: str,
-    output_path: str
+    output_path: str,
+    batch_size: int = 32
 ):
     ir_evaluator = InformationRetrievalEvaluator(
         queries=queries,
         corpus=corpus,
         relevant_docs=relevant_docs,
         name=name,
-        batch_size=32,
+        batch_size=batch_size,
         show_progress_bar=True,
         write_csv=True
     )
