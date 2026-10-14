@@ -3,11 +3,14 @@ import argparse
 import os
 from pathlib import Path
 
-from multiprocessing import Pool
+from multiprocessing import get_context
 # Internal imports
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
-    prepare_tsdae_data
+    # prepare_tsdae_data
+)
+from Pipelines.Data_Prep.Functions.data_func import (
+    _prepare_tsdae_data
 )
 
 from Functions.hpo_func import (
@@ -21,11 +24,11 @@ REPO_ROOT = Path(os.environ.get("ACT_REPO_ROOT", ".")).resolve()
 
 def main():
     parser = argparse.ArgumentParser(description="Perform HPO on TSDAE model")
-    parser.add_argument(
-        "--prepare-data",
-        action="store_true",
-        help="Create and save HF train/validation/test dataset before HPO"
-    )
+    # parser.add_argument(
+    #     "--prepare-data",
+    #     action="store_true",
+    #     help="Create and save HF train/validation/test dataset before HPO"
+    # )
 
     parser.add_argument(
         "--dataset-dir",
@@ -36,7 +39,7 @@ def main():
 
     parser.add_argument(
         "--data-path",
-        required=True,
+        default=None,
         help="Path to input HF dataset file"
     )
 
@@ -77,11 +80,11 @@ def main():
 
     args = parser.parse_args()
 
-    if args.prepare_data:
-        prepare_tsdae_data(
-            input_dir=args.data_path,
-            output_dir=args.dataset_dir,
-        )
+    # if args.prepare_data:
+    #     _prepare_tsdae_data(
+    #         data_path=args.data_path,
+    #         base_dir=args.dataset_dir,
+    #     )
     
     _run_tsdae_hpo(
         input_dir=args.dataset_dir,
@@ -94,5 +97,5 @@ def main():
 
 
 if __name__ == "__main__":
-    with Pool(processes=4) as pool:
-        pool.map(main(), range=(16))
+    with get_context("spawn").Pool(processes=2) as pool:
+        pool.apply(main)
