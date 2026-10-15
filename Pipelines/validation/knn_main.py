@@ -5,38 +5,53 @@ import pandas as pd
 import argparse
 
 # Internal
-from Functions.knn_func import _knn_classifier
+from Functions.knn_func import (
+    _knn_classifier,
+    _grind_search,
+)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run k Nearest Neighbor")
 
     parser.add_argument(
-        "--results-path",
-        type=str,
-        default=None,
-        help="Path to the LR reports for later reporting"
-    )
-
-    parser.add_argument(
-        "--embedding-path",
-        type=str,
-        default=None,
-        help="Path to calculated embeddings used for validation pipeline",
-    )
-
-    parser.add_argument(
         "--data-path",
         type=str,
-        default=None,
-        help="Path to data"
+        required=True,
+        help="Path to input parquet dataset")
+
+    parser.add_argument(
+        "--seed-number",
+        type=int,
+        default=1849,
+        help="Seed number for datasplit subdirectory name"
     )
 
+    parser.add_argument(
+        "output-path",
+        type=str,
+        default=None,
+        help="Directory for kNN evaluation results"
+    )
     
+    parser.add_argument(
+        "--filename",
+        type=str,
+        required=True,
+        help="Base filename for evaluation output"
+    )
+
     parser.add_argument(
         "--target",
         type=str,
         required=True,
-        help="target column in dataset (i.e age_group or requester_gender_name)"
+        help="target column in dataset (i.e age_group or gender)"
+    )
+
+    parser.add_argument(
+        "-k",
+        type=int,
+        default=5,
+        help="Number of nearest neighbors"
     )
 
     return parser.parse_args()
@@ -46,33 +61,20 @@ def main():
 
     args = parse_args()
 
-    df = pd.read_parquet(args.data_path)
+    train_df = pd.read_parquet(f"{args.data_path} / seed_{seed_number} / train.parquet")
 
-    train_df, val_df, test_df = _prep_data(df=df, embedding_path=args.embedding_path, seed=args.seed)
+    val_df = pd.read_parquet(f"{args.data_path} / seed_{seed_number} / val.parquet")
 
-    # Gender probe
-    _, gender_report = _LR_gender(
+    _,report = _knn_classifier(
         train_df=train_df,
-        test_df=test_df,
-        C=args.C,
-        class_weight=class_weight,
-        filename=f"{args.filename}_gender_{args.seed}",
+        val_df=val_df,
+        target=args.target,
+        k=args.k,
+        filename=args.filename,
+        output_path=args.output_path
     )
-
-    # Age Probe
-    _, age_report = _LR_age(
-        train_df=train_df,
-        test_df=test_df,
-        C=args.C,
-        class_weight=class_weight,
-        filename=f"{args.filename}_age_{args.seed}"
-    )
-
-    _create_report(
-    gender_report=gender_report,
-    age_report=age_report,
-    filename=f"{args.filename}_{args.seed}.xlsx",
-)
+    
+    print(report)
 
 if __name__ == "__main__":
     main()

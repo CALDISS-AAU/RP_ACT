@@ -41,7 +41,7 @@ def _knn_classifier(
 
     report = classification_report(
         y_val,
-        age_predictions,
+        predictions,
         zero_division=0,
         output_dict=True
     )
