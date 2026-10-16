@@ -5,7 +5,7 @@ import pandas as pd
 import argparse
 
 # Internal
-from Functions.logistic_reg_func import _prep_data, _create_report, _LR_gender, _LR_age, _calc_sd_mean
+from Functions.validation_func import _prep_data, _create_report, _LR_gender, _LR_age, _calc_sd_mean
 
 
 def parse_args():
@@ -29,6 +29,13 @@ def parse_args():
         type=str,
         default=None,
         help="Path to data"
+    )
+
+    parser.add_argument(
+        "--target",
+        type=str,
+        required=True,
+        help="target column in dataset (i.e age_group or gender)"
     )
 
     parser.add_argument(
@@ -82,21 +89,25 @@ def main():
     train_df, val_df, test_df = _prep_data(df=df, seed=args.seed)
 
     # Gender probe
-    _, gender_report = _LR_gender(
+    _, gender_report = _LR_classifier(
         train_df=train_df,
-        test_df=test_df,
+        test_df=val_df,
+        random_state=args.seed,
         C=args.C,
+        target=args.target,
         class_weight=class_weight,
-        filename=f"{args.filename}_gender_{args.seed}",
+        filename=f"{args.filename}_{target}_{args.seed}"
     )
 
     # Age Probe
-    _, age_report = _LR_age(
+    _, age_report = _LR_classifier(
         train_df=train_df,
-        test_df=test_df,
+        test_df=val_df,
+        random_state=args.seed,
         C=args.C,
+        target=args.target,
         class_weight=class_weight,
-        filename=f"{args.filename}_age_{args.seed}"
+        filename=f"{args.filename}_{target}_{args.seed}"
     )
 
     _create_report(

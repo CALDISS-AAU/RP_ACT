@@ -5,7 +5,7 @@ import argparse
 from datasets import load_dataset, load_from_disk
 
 # Internal
-from Functions.ire_func import (
+from Functions.validation_func import (
     _load_model,
     _create_corpus,
     _InformationRetrievalEvaluator_builder,

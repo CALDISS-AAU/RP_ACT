@@ -5,7 +5,7 @@ import pandas as pd
 import argparse
 
 # Internal
-from Functions.knn_func import (
+from Functions.validation_func import (
     _knn_classifier,
     _grind_search,
 )
