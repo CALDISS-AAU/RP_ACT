@@ -18,12 +18,11 @@ from sklearn.model_selection import train_test_split
 from Shared_Functions.modelling_functions import split_data
 
 
-def _prep_data(df: pd.DataFrame, embedding_path: str, seed: int):
+def _prep_data(df: pd.DataFrame, seed: int):
     """
     Function preps data for logistic regression.
     Inputs:
-            df: pandas dataframe
-            embedding_path: path to calculated embeddings
+            df: pandas dataframe with embedding column
 
     Function does train/test/validation split
     Maps and creates a gender column
@@ -33,18 +32,18 @@ def _prep_data(df: pd.DataFrame, embedding_path: str, seed: int):
             val_df: Holdout validation set
             test_df: test set
     """
-
-    embeddings = np.load(embedding_path)
     print("df rows:", len(df))
-    print("embedding rows:", len(embeddings))
 
-    # Merging embeddings back to dataframe
-    assert len(df) == len(embeddings), (
-        "Number of dataframe rows does not match number of embeddings"
-    )
+    required_columns = [
+        'embedding',
+        'age_group',
+        'gender'
+        ]
+    
+    missing = set(required_columns) - set(df.columns)
 
-    df = df.copy()
-    df["embedding"] = list(embeddings)
+    if missing:
+        raise ValueError (f"Missing columns: {missing}")
 
     polars_df = pl.from_pandas(df)
 
@@ -65,6 +64,17 @@ def _prep_data(df: pd.DataFrame, embedding_path: str, seed: int):
 
     return train_df, val_df, test_df
 
+def _get_embeddings(df: pd.DataFrame):
+    X = np.stack([
+        np.asanyarray(emb, dtype=np.float32)
+        for emb in df['embedding']
+    ])
+
+    if not np.isfinite(X).all():
+        raise ValueError("Embeddings contain NaN or infinity")
+    
+    return X
+
 
 def _LR_gender(
     train_df: pd.DataFrame,
@@ -72,7 +82,7 @@ def _LR_gender(
     filename: str,
     C: float = 1.0,
     class_weight="balanced",
-    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results",
 ):
     """
     Function for training Logistic regression
@@ -80,14 +90,14 @@ def _LR_gender(
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    X_train = np.stack(train_df["embedding"].to_numpy())
+    X_train = _get_embeddings(train_df)
     y_train = train_df["gender"].to_numpy()
 
-    X_test = np.stack(test_df["embedding"].to_numpy())
+    X_test = _get_embeddings(test_df)
     y_test = test_df["gender"].to_numpy()
 
     # Defining LR
-    clf = LogisticRegression(max_iter=1000, class_weight="balanced")
+    clf = LogisticRegression(C=C, max_iter=1000, class_weight=class_weight)
 
     clf.fit(X_train, y_train)
 
@@ -126,10 +136,15 @@ def _LR_age(
     filename: str,
     C: float = 1.0,
     class_weight="balanced",
-    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Results",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results",
 ):
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
+
+    valid_genders = ['female', 'male']
+
+    train_df = train_df[train_df['gender'].isin(valid_genders)].copy()
+    test_df = test_df[test_df['gender'].isin(valid_genders)].copy()
 
     X_train = np.stack(train_df["embedding"].to_numpy())
     y_train = train_df["age_group"].to_numpy()
@@ -192,7 +207,7 @@ def _create_report(
     gender_report,
     age_report,
     filename: str = "lr_results.xlsx",
-    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Logistic_Regression_Test/Functions/Results",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results",
 ):
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)

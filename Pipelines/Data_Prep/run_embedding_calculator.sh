@@ -1,0 +1,1 @@
+uv run python /work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Data_Prep/embeddings_main.py
