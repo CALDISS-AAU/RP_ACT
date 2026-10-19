@@ -81,16 +81,11 @@ def _hpo_search_space(trial):
             0.0,
             0.15,
         ),
-        "learning_rate": trial.suggest_categorical(
+        "learning_rate": trial.suggest_float(
             "learning_rate",
-            [
-                5e-6,
-                1e-6,
-                5e-5,
-                1e-5,
-                5e-4
-            ],
-            # log=True,
+            1e-7,
+            5e-4,
+            log=True,
         ),
         "weight_decay": trial.suggest_float(
             "weight_decay",
@@ -274,6 +269,7 @@ def _run_tsdae_hpo(
     study.optimize(
         objective,
         n_trials=n_trials,
+        n_jobs=1,
         gc_after_trial=True,
     )
 

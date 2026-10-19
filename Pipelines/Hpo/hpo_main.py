@@ -97,5 +97,4 @@ def main():
 
 
 if __name__ == "__main__":
-    with get_context("spawn").Pool(processes=2) as pool:
-        pool.apply(main)
+    main()
