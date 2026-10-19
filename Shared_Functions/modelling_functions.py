@@ -101,7 +101,7 @@ def calc_mistral_embeddings(
 # Build model baseline
 def build_sentence_transformer(
     model_name: str = "BAAI/bge-m3",
-    max_seq_length: int = 128,
+    max_seq_length: int = 1024,
     pooling_mode: str = "mean",
 ) -> SentenceTransformer:
     base_model = models.Transformer(
