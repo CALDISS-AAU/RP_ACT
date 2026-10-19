@@ -47,7 +47,7 @@ def main() -> None:
     )
 
     calc_embeddings(
-        model_path="/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-Collapsed-v2",
+        model_path="/work/RP_act/ACT/Modelling/ACT-TSDAE-collapsed_WoA",
         batch_size=16,
         device=devices,
         data_path="/work/RP_act/ACT/Data/Clean_Combine/collapsed_messages_data_without_advisors.parquet",
@@ -56,7 +56,7 @@ def main() -> None:
     )
 
     calc_embeddings(
-        model_path="/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/Tsdae_Model/modelling/ACT-TSDAE-Collapsed-v2",
+        model_path="/work/RP_act/ACT/Modelling/ACT-TSDAE-collapsed",
         batch_size=16,
         device=devices,
         data_path="/work/RP_act/ACT/Data/Clean_Combine/collapsed_messages_data.parquet",
