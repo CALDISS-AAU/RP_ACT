@@ -30,6 +30,7 @@ dependencies = [
     "spacy>=3.8.16",
     "xlsxwriter>=3.2.9",
     "seaborn>=0.13.2",
+    "da-core-news-trf",
 ]
 
 [project.scripts]
@@ -39,3 +40,6 @@ clear-pipeline = "Shared_Functions.Pipeline_Functions.wipe_pipeline_data:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["Shared_Functions*"]
+
+[tool.uv.sources]
+da-core-news-trf = { url = "https://github.com/explosion/spacy-models/releases/download/da_core_news_trf-3.8.0/da_core_news_trf-3.8.0-py3-none-any.whl" }

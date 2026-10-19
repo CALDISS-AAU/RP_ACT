@@ -19,8 +19,11 @@ from sentence_transformers.trainer import SentenceTransformerTrainer
 # Internal
 from Shared_Functions.modelling_functions import (
     build_sentence_transformer,
-    prepare_tsdae_data,
+    # prepare_tsdae_data,
     load_tsdae_training_data
+)
+from Pipelines.Data_Prep.Functions.data_func import (
+    _prepare_tsdae_data
 )
 
 
@@ -80,10 +83,7 @@ def _hpo_search_space(trial):
         ),
         "learning_rate": trial.suggest_float(
             "learning_rate",
-            5e-6,
-            1e-6,
-            5e-5,
-            1e-5,
+            1e-7,
             5e-4,
             log=True,
         ),
@@ -269,6 +269,7 @@ def _run_tsdae_hpo(
     study.optimize(
         objective,
         n_trials=n_trials,
+        n_jobs=1,
         gc_after_trial=True,
     )
 
