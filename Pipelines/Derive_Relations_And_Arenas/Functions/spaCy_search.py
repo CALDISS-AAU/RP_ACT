@@ -36,11 +36,8 @@ CSV_COLUMNS = [
 
 
 def __normalise_phrase(tokens: list[Token]) -> str:
-    """Build a lowercase phrase from token lemmas."""
-    return " ".join(
-        (token.lemma_ or token.text).casefold()
-        for token in tokens
-    )
+    """Build a lowercase phrase from the original token text."""
+    return " ".join(token.text.casefold() for token in tokens)
 
 
 def _get_phrase_tokens(head: Token) -> list[Token]:
@@ -88,7 +85,7 @@ def _analyse_texts(texts, conversation_codes, nlp):
             normalised_phrase = __normalise_phrase(phrase_tokens)
             occurrences.append((primary_word, normalised_phrase))
 
-        print(f"Tekst: {text}")
+        print(f"Tekst number: {text_index}")
         print(f"Relevante udtryk: {list(phrases_by_head.values())}")
 
         for token in doc:
@@ -114,16 +111,23 @@ def _analyse_texts(texts, conversation_codes, nlp):
 
 
 def _reduce_to_phrases_on_conversation_level(occurrences_by_conversation):
-    """Group each conversation's phrases by their primary word."""
+    """Count normalized phrases under each conversation and primary word."""
     phrases_by_conversation = {}
 
     for conversation_code, occurrences in occurrences_by_conversation.items():
-        conversation_phrases = {}
+        counts_by_word = {}
 
         for primary_word, phrase in occurrences:
-            conversation_phrases.setdefault(primary_word, []).append(phrase)
+            counts = counts_by_word.setdefault(primary_word, Counter())
+            counts[phrase] += 1
 
-        phrases_by_conversation[conversation_code] = conversation_phrases
+        phrases_by_conversation[conversation_code] = {
+            word: {
+                "count": sum(counts.values()),
+                "phrases": dict(counts.most_common()),
+            }
+            for word, counts in counts_by_word.items()
+        }
 
     return phrases_by_conversation
 
@@ -144,8 +148,43 @@ def _summarise_phrases_across_all_conversations(occurrences_by_conversation):
     )
 
     return {
-        primary_word: dict(counts.most_common())
+        primary_word: {
+            "count": sum(counts.values()),
+            "phrases": dict(counts.most_common()),
+        }
         for primary_word, counts in sorted_words
+    }
+
+
+def _summarise_phrases_by_conversation(occurrences_by_conversation):
+    """Count conversations per head word and collect unique phrases."""
+    summary = {}
+
+    for occurrences in occurrences_by_conversation.values():
+        words_in_conversation = set()
+
+        for primary_word, phrase in occurrences:
+            entry = summary.setdefault(
+                primary_word,
+                {"conversation_count": 0, "phrases": set()},
+            )
+            entry["phrases"].add(phrase)
+            words_in_conversation.add(primary_word)
+
+        for primary_word in words_in_conversation:
+            summary[primary_word]["conversation_count"] += 1
+
+    # Convert sets to JSON-compatible lists and sort by conversation count.
+    return {
+        primary_word: {
+            "conversation_count": entry["conversation_count"],
+            "phrases": sorted(entry["phrases"]),
+        }
+        for primary_word, entry in sorted(
+            summary.items(),
+            key=lambda item: item[1]["conversation_count"],
+            reverse=True,
+        )
     }
 
 
@@ -154,7 +193,7 @@ def derive_from_spacy_search(
     output_path: str,
 ) -> None:
     df = pl.read_parquet(input_path)
-    df = df[:10]
+    # df = df[:10]
     df_texts = df["msg_tekst"]
     df_conversation_code = df["conversation_code"]
     nlp = spacy.load("da_core_news_trf")
@@ -162,7 +201,8 @@ def derive_from_spacy_search(
     output_file = Path(output_path)  # CSV
     output_file.parent.mkdir(parents=True, exist_ok=True)
     json_file = output_file.parent / "relations_and_arenas_pr_conversation.json"
-    summary_file = output_file.parent / "summary.json"
+    summary_file = output_file.parent / "summary_count.json"
+    conversation_summary_file = output_file.parent / "summary_conversation_count.json"
 
     # Build the three outputs.
     token_rows, occurrences_by_conversation = _analyse_texts(
@@ -172,6 +212,9 @@ def derive_from_spacy_search(
         occurrences_by_conversation
     )
     summary = _summarise_phrases_across_all_conversations(
+        occurrences_by_conversation
+    )
+    conversation_summary = _summarise_phrases_by_conversation(
         occurrences_by_conversation
     )
 
@@ -187,6 +230,5 @@ def derive_from_spacy_search(
     with summary_file.open("w", encoding="utf-8") as file:
         json.dump(summary, file, ensure_ascii=False, indent=2)
 
-    print(f"CSV gemt: {output_file}")
-    print(f"JSON gemt: {json_file}")
-    print(f"Summary JSON gemt: {summary_file}")
+    with conversation_summary_file.open("w", encoding="utf-8") as file:
+        json.dump(conversation_summary, file, ensure_ascii=False, indent=2)
