@@ -26,7 +26,8 @@ def main() -> None:
     """Run the full Data_Prep pipeline."""
     parser = argparse.ArgumentParser(description="Prepare the TSDAE input DatasetDict")
     parser.add_argument("--data-path", required=True, help="Path to parquet file")
-    parser.add_argument("--base-dir", default="/work/RP_act/ACT/Data/Tsdae_Train_Data")
+    parser.add_argument("--base-dir", default="/work/RP_act/ACT/Data")
+    parser.add_argument("--embedding-path", type=str, required=True, help="Path to precalculated embeddings")
     parser.add_argument("--name", default="working_data", help="Subfolder for this version of the prepared data")
     parser.add_argument("--split-seed", type=int, default=1849)
     parser.add_argument("--save-split-parquet", action="store_true")
@@ -35,6 +36,7 @@ def main() -> None:
     dataset = _prepare_tsdae_data(
         data_path=args.data_path,
         base_dir=args.base_dir,
+        embeddings_path=args.embedding_path,
         name=args.name,
         seed=args.split_seed,
         save_split_parquets=args.save_split_parquet

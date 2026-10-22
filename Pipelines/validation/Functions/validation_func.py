@@ -25,7 +25,8 @@ from sklearn.preprocessing import normalize
 import matplotlib.pyplot as plt
 
 # Internal
-from Shared_Functions.modelling_functions import (load_tsdae_training_data, split_data)
+from Shared_Functions.modelling_functions import load_tsdae_training_data
+from Pipelines.Data_Prep.Functions.data_func import _split_data
 
 logging.basicConfig(
     format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO
@@ -52,7 +53,8 @@ def _create_corpus(dataset_path: str):
     maps
     """
     _, val_dataset, _ = load_tsdae_training_data(
-        dataset_path=dataset_path
+        dataset_path=dataset_path,
+        preserve_columns=True
     )
 
     # Create stable retrieval IDs for this evaluation set
@@ -95,8 +97,13 @@ def _create_group_ir_data(dataset, group_column: str):
     )
 
     groups = {}
-
-    for group_value in sorted(set(dataset[group_column])):
+    
+    group_values = sorted(
+        value
+        for value in set(dataset[group_column])
+        if value is not None
+    )
+    for group_value in group_values:
         group_dataset = dataset.filter(
             lambda x: x[group_column] == group_value
         )
@@ -277,6 +284,51 @@ def _grind_search(
     return grid
 
 # Logistic Regression functionality
+
+def _load_split_data(split_dir: str | Path):
+    """
+    Load existing train/validation/test splits
+    and prepare them for Logistic Regression.
+    """
+    split_dir = Path(split_dir)
+
+    train_df = pl.read_parquet(split_dir / "train.parquet")
+    val_df = pl.read_parquet(split_dir / "val.parquet")
+    test_df = pl.read_parquet(split_dir / "test.parquet")
+
+    required_columns = ['embedding', 'age_group', 'gender']
+
+    for name, df in [
+        ("train", train_df),
+        ("validation", val_df),
+        ("test", test_df),
+    ]:
+        missing = required_columns - set(df.columns)
+
+        if missing:
+            raise ValueError(
+                f"Missing columns in {name}: {missing}"
+            )
+
+    valid_genders = ["female", "male"]
+
+    train_df = train_df.filter(
+        pl.col("gender").is_in(valid_genders)
+    )
+    val_df = val_df.filter(
+        pl.col("gender").is_in(valid_genders)
+    )
+    test_df = test_df.filter(
+        pl.col("gender").is_in(valid_genders)
+    )
+
+    return (
+        train_df.to_pandas(),
+        val_df.to_pandas(),
+        test_df.to_pandas(),
+    )
+
+
 def _prep_data(df: pd.DataFrame, seed: int):
     """
     Function preps data for logistic regression.
@@ -342,7 +394,7 @@ def _get_embeddings(df: pd.DataFrame):
 
 def _LR_classifier(
     train_df: pd.DataFrame,
-    test_df: pd.DataFrame,
+    val_df: pd.DataFrame,
     filename: str,
     target: str,
     seed: int,
@@ -359,8 +411,8 @@ def _LR_classifier(
     X_train = _get_embeddings(train_df)
     y_train = train_df[target].to_numpy()
 
-    X_test = _get_embeddings(test_df)
-    y_test = test_df[target].to_numpy()
+    X_test = _get_embeddings(val_df)
+    y_test = val_df[target].to_numpy()
 
     # Defining LR
     clf = LogisticRegression(C=C, max_iter=1000, class_weight=class_weight, random_state=seed)

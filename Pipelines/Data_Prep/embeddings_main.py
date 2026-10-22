@@ -73,6 +73,24 @@ def main() -> None:
         filename="bge_m3_msg_WoA",
     )
 
+    calc_embeddings(
+        model_path="/work/RP_act/ACT/Modelling/ACT-TSDAE-conversations",
+        batch_size=16,
+        device=devices,
+        data_path="/work/RP_act/ACT/Data/Clean_Combine/conversation_data.parquet",
+        filename="conversation_embeddings",
+        normalize_embeddings=True,
+    )
+
+    calc_embeddings(
+        model_path="/work/RP_act/ACT/Modelling/ACT-TSDAE-conversations_WoA",
+        batch_size=16,
+        device=devices,
+        data_path="/work/RP_act/ACT/Data/Clean_Combine/conversation_data_without_advisors.parquet",
+        filename="conversation_WoA_embeddings",
+        normalize_embeddings=True,
+    )
+
 
 ## CALL OF MAIN FUNCTION ##
 if __name__ == "__main__":

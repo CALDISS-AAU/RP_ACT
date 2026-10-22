@@ -3,10 +3,12 @@
 import os
 from pathlib import Path
 import random
+import gc
 import numpy as np
 import faiss
 import polars as pl
 import pandas as pd
+import torch
 from datasets import load_dataset, load_from_disk
 from sentence_transformers import SentenceTransformer, models
 from datasets import load_from_disk
@@ -39,7 +41,7 @@ def calc_embeddings(
             df["msg_tekst"].tolist(),
             normalize_embeddings=normalize_embeddings,
             batch_size=batch_size,
-            device=devices,
+            device=device,
             show_progress_bar=True,
         ).astype('float32')
 
@@ -64,7 +66,7 @@ def calc_embeddings(
         gc.collect()
 
         if torch.cuda.is_available():
-            toch.cuda.empty_cache()
+            torch.cuda.empty_cache()
 
 def calc_mistral_embeddings(
     data_path: str = '/work/RP_act/ACT/Data/Clean_Combine/message_data.parquet',
@@ -176,6 +178,7 @@ def load_tsdae_training_data(
     dataset_path: str = '/work/RP_act/ACT/Data/Tsdae_Train_Data',
     del_ratio: float = 0.6,
     seed: int = 1998,
+    preserve_columns: bool = False
 ):
     dataset = load_from_disk(dataset_path)
 
@@ -202,7 +205,9 @@ def load_tsdae_training_data(
             del_ratio=del_ratio,
         ),
         batched=True,
-        remove_columns=val_dataset.column_names
+        remove_columns=(
+            None if preserve_columns else val_dataset.column_names
+        )
     )
 
     return train_dataset, val_dataset, test_dataset

@@ -56,11 +56,11 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--group-column",
-        type=str,
-        default=None,
-        help="Column for subroup filtering"
-    )
+    "--group-column",
+    nargs="+",
+    default=None,
+    help="Columns to evaluate separately, e.g. gender age_group",
+)
 
     return parser.parse_args()
 
@@ -71,7 +71,7 @@ def main():
 
     model = _load_model(args.model_path, args.local_files_only)
 
-    corpus, queries, relevant_docs = _create_corpus(args.dataset_path)
+    val_dataset, corpus, queries, relevant_docs = _create_corpus(args.dataset_path)
 
     resuls = _InformationRetrievalEvaluator_builder(
         corpus=corpus,
@@ -85,20 +85,21 @@ def main():
     # Gender + age_group testing
     if args.group_column:
 
-        corpus, groups = create_group_ir_data(
-            val_dataset,
-            group_column=args.group_column,
-        )
+        for column in args.group_column:
+            corpus, groups = _create_group_ir_data(
+                val_dataset,
+                group_column=column,
+            )
 
-    for group_value, data in groups.items():
-        results = _InformationRetrievalEvaluator_builder(
-            model=model,
-            corpus=corpus,
-            queries=data['queries'],
-            relevant_docs=data['relevant_docs'],
-            name=f"{args.name}_{args.group_column}_{group_value}",
-            output_path=args.output_path
-        )
+            for group_value, data in groups.items():
+                results = _InformationRetrievalEvaluator_builder(
+                    model=model,
+                    corpus=corpus,
+                    queries=data["queries"],
+                    relevant_docs=data["relevant_docs"],
+                    name=f"{args.name}_{column}_{group_value}",
+                    output_path=args.output_path,
+                )
 
 if __name__ == "__main__":
     main()

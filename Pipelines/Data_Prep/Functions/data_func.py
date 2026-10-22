@@ -13,9 +13,14 @@ def _split_data(
     test_size: float = 0.15,
     seed: int = 1849,
     save_dir: str | Path | None = None,
+    dataset_name: str | None = None,
 ) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
     """
+    Adds precalculated embedddings to DataFrame.
     Split a Polars DataFrame into stratified train, validation, and test sets.
+
+    Optionally save Parquet splits under:
+        save_dir / dataset_name / seed_{seed}/
 
     The data is stratified by gender and age group to preserve their
     distributions across the resulting splits. The seed controls the
@@ -31,75 +36,92 @@ def _split_data(
         A tuple containing the train, validation, and test DataFrames,
         respectively.
     """
+
     train_df, temp_df = split_into_train_eval(
         df,
         eval_rel_size=val_size + test_size,
-        stratify_by=['gender', 'age_group'],
+        stratify_by=["gender", "age_group"],
         shuffle=True,
-        seed=seed
+        seed=seed,
     )
     val_df, test_df = split_into_train_eval(
         temp_df,
         eval_rel_size=test_size / (val_size + test_size),
-        stratify_by=['gender', 'age_group'],
+        stratify_by=["gender", "age_group"],
         shuffle=True,
-        seed=seed
+        seed=seed,
     )
+
     if save_dir is not None:
-        save_dir = Path(save_dir)
-        save_dir.mkdir(parents=True, exist_ok=True)
-        train_df.write_parquet(save_dir / "train.parquet")
-        val_df.write_parquet(save_dir / "val.parquet")
-        test_df.write_parquet(save_dir / "test.parquet")
+        if not dataset_name:
+            raise ValueError("dataset_name is required when saving splits")
+
+        split_dir = Path(save_dir) / dataset_name / f"seed_{seed}"
+        split_dir.mkdir(parents=True, exist_ok=True)
+
+        train_df.write_parquet(split_dir / "train.parquet")
+        val_df.write_parquet(split_dir / "val.parquet")
+        test_df.write_parquet(split_dir / "test.parquet")
+
+        print(f"Splits saved to: {split_dir}")
 
     return train_df, val_df, test_df
 
+
 # Convert to DatasetDict
-def _create_hf_dataset(
-    df: pl.DataFrame,
-    text_column: str = "msg_tekst"
-    ) -> Dataset:
-    
-    return Dataset.from_dict({text_column: df[text_column].to_list()})
+def _create_hf_dataset(df: pl.DataFrame, text_column: str = "msg_tekst") -> Dataset:
+
+    columns = [text_column, "gender", "age_group"]
+
+    return Dataset.from_dict({col: df[col].to_list() for col in columns})
 
 
 def _prepare_tsdae_data(
     data_path: str,
-    base_dir: str | Path,
     embeddings_path: str,
-    name: str = "working_data",
+    base_dir: str | Path,
+    name: str,
     seed: int = 1849,
     save_split_parquets: bool = False,
-)-> DatasetDict:
+) -> DatasetDict:
 
     data_path = Path(data_path)
-    output_dir = Path(base_dir) / name
-    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Hugging Face DatasetDict destination
+    output_dir = Path(base_dir) / "Tsdae_Train_Data" / name
 
     dataset = pl.read_parquet(data_path)
-    
-    embeddings = np.load(embedding_path)
-    print("df rows:", len(dataset))
-    print("embedding rows:", len(embeddings))
 
-    # Merging embeddings back to dataframe
-    assert len(df) == len(embeddings), (
-        "Number of dataframe rows does not match number of embeddings"
+    embeddings = np.load(embeddings_path)
+    if len(dataset) != len(embeddings):
+        raise ValueError(
+            f"Dataset has {len(dataset)} rows, "
+            f"embeddings contain {len(embeddings)} rows"
+        )
+
+    # Merging embeddings to dataframe
+
+    dataset = dataset.with_columns(pl.Series("embedding", embeddings.tolist()))
+
+    # Add embeddings, split data, and optionally save Parquets
+    train_df, val_df, test_df = _split_data(
+        df=dataset,
+        seed=seed,
+        save_dir=(Path(base_dir) / "splits" if save_split_parquets else None),
+        dataset_name=data_path.stem,
     )
 
-    dataset = dataset.copy()
-    dataset["embedding"] = list(embeddings)
+    # Create Hugging Face DatasetDict
+    hf_dataset = DatasetDict(
+        {
+            "train": _create_hf_dataset(train_df),
+            "validation": _create_hf_dataset(val_df),
+            "test": _create_hf_dataset(test_df),
+        }
+    )
 
-    train_df, val_df, test_df = _split_data(
-        dataset,
-        seed=seed,
-        save_dir=Path(output_dir) / "splits" if save_split_parquets else None)
+    hf_dataset.save_to_disk(str(output_dir))
 
-    dataset = DatasetDict({
-        "train": _create_hf_dataset(train_df),
-        "validation": _create_hf_dataset(val_df),
-        "test": _create_hf_dataset(test_df)
-    })
-    dataset.save_to_disk(output_dir)
+    print(f"Hugging Face dataset saved to: {output_dir}")
 
-    return dataset
+    return hf_dataset

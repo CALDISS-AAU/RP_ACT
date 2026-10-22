@@ -5,7 +5,7 @@ import pandas as pd
 import argparse
 
 # Internal
-from Functions.validation_func import _prep_data, _create_report, _LR_gender, _LR_age, _calc_sd_mean
+from Functions.validation_func import _load_split_data, _create_report, _LR_classifier, _calc_sd_mean
 
 
 def parse_args():
@@ -25,18 +25,18 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--data-path",
-        type=str,
-        default=None,
-        help="Path to data"
-    )
-
-    parser.add_argument(
-        "--target",
+        "--split-dir",
         type=str,
         required=True,
-        help="target column in dataset (i.e age_group or gender)"
+        help="Directory containing train/validation/test Parquet files."
     )
+
+    # parser.add_argument(
+    #     "--target",
+    #     type=str,
+    #     required=True,
+    #     help="target column in dataset (i.e age_group or gender)"
+    # )
 
     parser.add_argument(
     "--seed",
@@ -61,7 +61,7 @@ def parse_args():
     parser.add_argument(
         "--filename",
         type=str,
-        default="confusion_matrix",
+        default="LR_report",
     )
 
     return parser.parse_args()
@@ -73,20 +73,27 @@ def main():
 
     # Calculate mean and standard deviation across saved LR reports
     if args.calculate_sd_mean:
-        summary = _calc_sd_mean(results_path=args.results_path)
+        if not args.results_path:
+            raise ValueError(
+                "--results-path is required for summary mode."
+            )
+
+        summary = _calc_sd_mean(
+            results_path=args.results_path
+        )
         print(summary)
         return
     
     # Required for normal LR run
-    if args.data_path is None:
-        raise ValueError("--data-path is required for LR evaluation.")
+    if args.split_dir is None:
+        raise ValueError("--split-dir is required for LR evaluation.")
 
     # LR Stuff
     class_weight = None if args.class_weight == "none" else args.class_weight
 
-    df = pd.read_parquet(args.data_path)
-
-    train_df, val_df, test_df = _prep_data(df=df, seed=args.seed)
+    train_df, val_df, test_df = _load_split_data(
+        args.split_dir
+    )
 
     # Gender probe
     _, gender_report = _LR_classifier(
@@ -94,9 +101,9 @@ def main():
         test_df=val_df,
         random_state=args.seed,
         C=args.C,
-        target=args.target,
+        target="gender",
         class_weight=class_weight,
-        filename=f"{args.filename}_{target}_{args.seed}"
+        filename=f"{args.filename}_gender"
     )
 
     # Age Probe
@@ -105,15 +112,15 @@ def main():
         test_df=val_df,
         random_state=args.seed,
         C=args.C,
-        target=args.target,
+        target="age_group",
         class_weight=class_weight,
-        filename=f"{args.filename}_{target}_{args.seed}"
+        filename=f"{args.filename}_age_group"
     )
 
     _create_report(
     gender_report=gender_report,
     age_report=age_report,
-    filename=f"{args.filename}_{args.seed}.xlsx",
+    filename=f"{args.filename}.xlsx",
 )
 
 if __name__ == "__main__":
