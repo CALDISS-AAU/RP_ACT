@@ -132,6 +132,51 @@ def _reduce_to_phrases_on_conversation_level(occurrences_by_conversation):
     return phrases_by_conversation
 
 
+def _section_conversation_summary(
+    conversation_summary: dict,
+    word_categories: dict,
+) -> dict:
+    """Group summary entries by category, preserving counts and word order."""
+    category_names = (
+        "arenas",
+        "maybe_arenas",
+        "relations",
+        "maybe_relations",
+        "neither",
+    )
+
+    # Convert lists to sets for efficient membership checks.
+    category_words = {
+        category: {
+            word.casefold()
+            for word in word_categories[category]
+        }
+        for category in category_names
+    }
+
+    sectioned_summary = {
+        category: {}
+        for category in category_names
+    }
+
+    for primary_word, entry in conversation_summary.items():
+        matching_categories = [
+            category
+            for category in category_names
+            if primary_word.casefold() in category_words[category]
+        ]
+
+        if not matching_categories:
+            # New words may not exist in the original mapping.
+            sectioned_summary.setdefault("unmapped", {})[primary_word] = entry
+            continue
+
+        for category in matching_categories:
+            sectioned_summary[category][primary_word] = entry
+
+    return sectioned_summary
+    
+
 def _summarise_phrases_across_all_conversations(occurrences_by_conversation):
     """Count phrases globally and sort words and phrases by frequency."""
     phrase_counts_by_word = {}
@@ -191,6 +236,7 @@ def _summarise_phrases_by_conversation(occurrences_by_conversation):
 def derive_from_spacy_search(
     input_path: str,
     output_path: str,
+    word_categories: dict
 ) -> None:
     df = pl.read_parquet(input_path)
     # df = df[:10]
@@ -203,6 +249,9 @@ def derive_from_spacy_search(
     json_file = output_file.parent / "relations_and_arenas_pr_conversation.json"
     summary_file = output_file.parent / "summary_count.json"
     conversation_summary_file = output_file.parent / "summary_conversation_count.json"
+    counts_only_file = (
+        output_file.parent / "summary_conversation_count_without_phrases.json"
+    )
 
     # Build the three outputs.
     token_rows, occurrences_by_conversation = _analyse_texts(
@@ -214,9 +263,24 @@ def derive_from_spacy_search(
     summary = _summarise_phrases_across_all_conversations(
         occurrences_by_conversation
     )
-    conversation_summary = _summarise_phrases_by_conversation(
+    flat_conversation_summary = _summarise_phrases_by_conversation(
         occurrences_by_conversation
     )
+
+    conversation_summary = _section_conversation_summary(
+        flat_conversation_summary,
+        word_categories,
+    )
+
+    conversation_counts_only = {
+        category: {
+            primary_word: {
+                "conversation_count": entry["conversation_count"],
+            }
+            for primary_word, entry in words.items()
+        }
+        for category, words in conversation_summary.items()
+    }
 
     # Save the outputs.
     with output_file.open("w", encoding="utf-8-sig", newline="") as file:
@@ -232,3 +296,6 @@ def derive_from_spacy_search(
 
     with conversation_summary_file.open("w", encoding="utf-8") as file:
         json.dump(conversation_summary, file, ensure_ascii=False, indent=2)
+    
+    with counts_only_file.open("w", encoding="utf-8") as file:
+        json.dump(conversation_counts_only, file, ensure_ascii=False, indent=2)

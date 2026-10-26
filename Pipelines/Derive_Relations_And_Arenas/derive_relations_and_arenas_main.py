@@ -10,7 +10,8 @@ To run this script, use the following command from the project root:
 # from collections import Counter
 # import re 
 # import csv
-# from pathlib import Path
+from pathlib import Path
+import json
 # from spacy.lang.da import Danish
 # Internal
 from Shared_Functions.logger_functionality import *
@@ -22,6 +23,7 @@ from .Functions.spaCy_search import derive_from_spacy_search
 ## STATIC VARIABLES ##
 # Directories - input
 INPUT_DIR_ALL_CONVOS = "./Data/Clean_Combine/conversation_data_without_advisors.parquet"
+INPUT_DIR_WORD_CATEGORIES = "Pipelines/Derive_Relations_And_Arenas/Functions/word_categories.json"
 
 # Directories - internal output
 # OUTPUT_DIR_AAA = "Pipelines/Derive_Relations_And_Arenas/Data/xxx.zzz"
@@ -180,6 +182,9 @@ STOPWORDS_EXTENSION = (
     'menstruation','mærkeligt','hvert','årlig','ubehageligt',   
 )
 
+with Path(INPUT_DIR_WORD_CATEGORIES).open("r", encoding="utf-8") as file:
+    WORD_CATEGORIES = json.load(file)
+
 MIN_WORD_COUNT = 1000
 MIN_TEXT_COUNT = 900
 ## _______________________ ##
@@ -202,7 +207,8 @@ def main() -> None:
     # )
     derive_from_spacy_search(
         input_path=INPUT_DIR_ALL_CONVOS,
-        output_path=OUTPUT_DIR_SPACY_TOKENS
+        output_path=OUTPUT_DIR_SPACY_TOKENS,
+        word_categories=WORD_CATEGORIES
     )
 
 ## CALL OF MAIN FUNCTION ##
