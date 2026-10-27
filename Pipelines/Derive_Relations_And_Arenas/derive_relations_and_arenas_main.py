@@ -34,6 +34,9 @@ OUTPUT_DIR_SPACY_TOKENS = "Pipelines/Derive_Relations_And_Arenas/Data/spacy_toke
 
 OUTPUT_DIR_COUNTS = f"{OUTPUT_DIR_WORDS_BASE}/counts.xlsx"
 
+# Directories - logs
+OUTPUT_DIR_LOG = "Pipelines/Derive_Relations_And_Arenas/Logs/derive_relations_and_arenas.log"
+
 # Other
 MAYBE_STOPWORDS = (
     'me', # Engelsk 'mig selv'?
@@ -197,6 +200,14 @@ MIN_TEXT_COUNT = 900
 ## MAIN FUNCTION ##
 def main() -> None:
     """Run the full Derive_Relations_And_Arenas pipeline."""
+    logger = setup_logger(
+        output_dir_log=OUTPUT_PATH_LOG,
+        logger_name="derive_relations_and_arenas",
+        overwrite=True,
+    )
+
+    logger.info("Starting Derive_Relations_And_Arenas pipeline.")
+
     # derive_from_keyword_search(
     #     input_path=INPUT_DIR_ALL_CONVOS,
     #     output_path=OUTPUT_DIR_COUNTS,
@@ -205,11 +216,17 @@ def main() -> None:
     #     min_word_count=MIN_WORD_COUNT,
     #     min_text_count=MIN_TEXT_COUNT
     # )
-    derive_from_spacy_search(
-        input_path=INPUT_DIR_ALL_CONVOS,
-        output_path=OUTPUT_DIR_SPACY_TOKENS,
-        word_categories=WORD_CATEGORIES
-    )
+
+    try:
+        derive_from_spacy_search(
+            input_path=INPUT_DIR_ALL_CONVOS,
+            output_path=OUTPUT_DIR_SPACY_TOKENS,
+            word_categories=WORD_CATEGORIES,
+            logger=logger,
+        )
+    except Exception:
+        logger.exception("Pipeline failed.")
+        raise
 
 ## CALL OF MAIN FUNCTION ##
 if __name__ == "__main__":
