@@ -17,6 +17,7 @@ import json
 from Shared_Functions.logger_functionality import *
 from .Functions.keyword_search import derive_from_keyword_search
 from .Functions.spaCy_search import derive_from_spacy_search
+from .Functions.compare_relations_and_arenas import generate_comparison_workbooks
 ## _______ ##
 
 
@@ -190,6 +191,19 @@ with Path(INPUT_DIR_WORD_CATEGORIES).open("r", encoding="utf-8") as file:
 
 MIN_WORD_COUNT = 1000
 MIN_TEXT_COUNT = 900
+
+SUMMARY_TOP_N = 20
+
+SUMMARY_GROUPS = [
+    ("Total", "Total"),
+    ("gender_female", "Female"),
+    ("gender_male", "Male"),
+    ("gender_other", "Other"),
+    ("age_group_pre_teen", "Pre teen"),
+    ("age_group_early_teen", "Early teen"),
+    ("age_group_teen", "Teen"),
+    # ("gender___missing__", "Missing gender"),
+]
 ## _______________________ ##
 
 
@@ -201,13 +215,14 @@ MIN_TEXT_COUNT = 900
 def main() -> None:
     """Run the full Derive_Relations_And_Arenas pipeline."""
     logger = setup_logger(
-        output_dir_log=OUTPUT_PATH_LOG,
+        output_dir_log=OUTPUT_DIR_LOG,
         logger_name="derive_relations_and_arenas",
         overwrite=True,
     )
 
     logger.info("Starting Derive_Relations_And_Arenas pipeline.")
 
+    # KEYWORD MATCHING
     # derive_from_keyword_search(
     #     input_path=INPUT_DIR_ALL_CONVOS,
     #     output_path=OUTPUT_DIR_COUNTS,
@@ -217,16 +232,27 @@ def main() -> None:
     #     min_text_count=MIN_TEXT_COUNT
     # )
 
-    try:
-        derive_from_spacy_search(
-            input_path=INPUT_DIR_ALL_CONVOS,
-            output_path=OUTPUT_DIR_SPACY_TOKENS,
-            word_categories=WORD_CATEGORIES,
-            logger=logger,
-        )
-    except Exception:
-        logger.exception("Pipeline failed.")
-        raise
+    # DERIVE RELATIONS AND ARENAS USING SPACY
+    # try:
+    #     derive_from_spacy_search(
+    #         input_path=INPUT_DIR_ALL_CONVOS,
+    #         output_path=OUTPUT_DIR_SPACY_TOKENS,
+    #         word_categories=WORD_CATEGORIES,
+    #         logger=logger,
+    #     )
+    # except Exception:
+    #     logger.exception("Pipeline failed.")
+    #     raise
+
+    # COMPARE SPACY RESULTS FOR VARIOUS STRATIFICATIONS
+    generate_comparison_workbooks(
+        input_dir=str(Path(OUTPUT_DIR_SPACY_TOKENS).parent),
+        output_dir=OUTPUT_DIR_WORDS_BASE,
+        logger=logger,
+        top_n=SUMMARY_TOP_N,
+        summary_groups=SUMMARY_GROUPS,
+    )
+
 
 ## CALL OF MAIN FUNCTION ##
 if __name__ == "__main__":

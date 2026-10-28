@@ -31,6 +31,7 @@ dependencies = [
     "xlsxwriter>=3.2.9",
     "seaborn>=0.13.2",
     "da-core-news-trf",
+    "openpyxl>=3.1.5",
 ]
 
 [project.scripts]

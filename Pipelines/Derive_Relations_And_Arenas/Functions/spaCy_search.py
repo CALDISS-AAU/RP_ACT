@@ -7,6 +7,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 import logging
+from time import perf_counter
 
 import polars as pl
 import spacy
@@ -54,17 +55,43 @@ def _get_phrase_tokens(head: Token) -> list[Token]:
     return sorted([*context, head], key=lambda token: token.i)
 
 
-def _analyse_texts(texts, conversation_codes, nlp):
+def _analyse_texts(texts, conversation_codes, nlp, logger: logging.Logger):
     """Build CSV rows and collect (primary word, phrase) occurrences."""
     token_rows = []
     occurrences_by_conversation = {}
     occurrences_by_text = {}
 
+    total_texts = len(texts)
+    skipped_texts = 0
+    started_at = perf_counter()
+    logger.info("Text analysis started: %s texts to process.", total_texts)
+
     for text_index, text in enumerate(texts):
+        text_number = text_index + 1
+        logger.info(
+            "Processing text %s/%s (%.1f%% reached; Text_index=%s).",
+            text_number,
+            total_texts,
+            100 * text_number / total_texts,
+            text_index,
+        )
+
         if text is None or not text.strip():
+            skipped_texts += 1
+            logger.info("Skipped text %s/%s: blank or null.", text_number, total_texts)
             continue
 
-        doc = nlp(text)
+        text_started_at = perf_counter()
+        try:
+            doc = nlp(text)
+        except Exception:
+            logger.error(
+                "spaCy analysis failed at text %s/%s (Text_index=%s).",
+                text_number,
+                total_texts,
+                text_index,
+            )
+            raise
         conversation_code = str(conversation_codes[text_index])
         occurrences = occurrences_by_conversation.setdefault(
             conversation_code, []
@@ -93,7 +120,6 @@ def _analyse_texts(texts, conversation_codes, nlp):
             occurrences.append(occurrence)
             text_occurrences.append(occurrence)
 
-        print(f"Tekst number: {text_index}")
         # print(f"Relevante udtryk: {list(phrases_by_head.values())}")
 
         for token in doc:
@@ -114,6 +140,24 @@ def _analyse_texts(texts, conversation_codes, nlp):
                 phrases_by_head.get(token.i, ""),
                 primary_words_by_head.get(token.i, ""),
             ])
+
+        logger.info(
+            "Completed text %s/%s (%.1f%%): %s tokens, %s phrase occurrences; %.2f seconds.",
+            text_number,
+            total_texts,
+            100 * text_number / total_texts,
+            len(doc),
+            len(text_occurrences),
+            perf_counter() - text_started_at,
+        )
+
+    logger.info(
+        "Text analysis finished: %s analysed, %s skipped, %s token rows; %.2f seconds.",
+        len(occurrences_by_text),
+        skipped_texts,
+        len(token_rows),
+        perf_counter() - started_at,
+    )
 
     return (
         token_rows,
@@ -325,23 +369,29 @@ def _save_stratum(
     token_rows,
     occurrences_by_conversation: dict,
     word_categories: dict,
+    logger: logging.Logger,
 ) -> None:
     """Build and save all outputs for one subset of texts."""
     output_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("[%s] Building phrase counts per conversation.", output_dir)
 
     phrases_by_conversation = _reduce_to_phrases_on_conversation_level(
         occurrences_by_conversation
     )
+    logger.info("[%s] Building global phrase counts.", output_dir)
     summary = _summarise_phrases_across_all_conversations(
         occurrences_by_conversation
     )
+    logger.info("[%s] Counting conversations per primary word.", output_dir)
     flat_conversation_summary = _summarise_phrases_by_conversation(
         occurrences_by_conversation
     )
+    logger.info("[%s] Grouping words by category.", output_dir)
     conversation_summary = _section_conversation_summary(
         flat_conversation_summary,
         word_categories,
     )
+    logger.info("[%s] Building conversation counts without phrases.", output_dir)
     conversation_counts_only = {
         category: {
             primary_word: {
@@ -354,10 +404,12 @@ def _save_stratum(
 
     csv_file = output_dir / csv_filename
 
+    logger.info("Writing CSV: %s", csv_file)
     with csv_file.open("w", encoding="utf-8-sig", newline="") as file:
         writer = csv.writer(file, delimiter=";")
         writer.writerow(CSV_COLUMNS)
         writer.writerows(token_rows)
+    logger.info("CSV saved: %s", csv_file)
 
     json_outputs = {
         "relations_and_arenas_pr_conversation.json": (
@@ -370,9 +422,12 @@ def _save_stratum(
         ),
     }
 
-    for filename, contents in json_outputs.items():
-        with (output_dir / filename).open("w", encoding="utf-8") as file:
+    for file_number, (filename, contents) in enumerate(json_outputs.items(), start=1):
+        json_file = output_dir / filename
+        logger.info("Writing JSON %s/%s: %s", file_number, len(json_outputs), json_file)
+        with json_file.open("w", encoding="utf-8") as file:
             json.dump(contents, file, ensure_ascii=False, indent=2)
+        logger.info("JSON saved: %s", json_file)
 
 
 def derive_from_spacy_search(
@@ -381,24 +436,45 @@ def derive_from_spacy_search(
     word_categories: dict,
     logger: logging.Logger,
 ) -> None:
+    started_at = perf_counter()
+    logger.info("Starting spaCy search.")
+    logger.info("Step 1/6: Reading input parquet: %s", Path(input_path).resolve())
     df = pl.read_parquet(input_path)
     # df = df[:10]
 
+    logger.info("Step 2/6: Normalising age-group labels.")
     df = df.with_columns(
         pl.col("age_group")
         .str.strip_chars()
         .str.replace_all(r"\s+", "_")
     )
 
+    logger.info(
+        "Input contains %s texts across %s conversation codes.",
+        df.height,
+        df["conversation_code"].n_unique(),
+    )
+    logger.info(
+        "Metadata: %s rows with null gender; %s rows with null age group.",
+        df["gender"].null_count(),
+        df["age_group"].null_count(),
+    )
+
     df_texts = df["msg_tekst"]
     conversation_codes = df["conversation_code"].to_list()
 
     # Build the subsets first, also checking the metadata columns exist.
+    logger.info("Step 3/6: Preparing output groups.")
     strata = list(_iter_strata(df))
+    logger.info("Prepared %s output groups, including Total.", len(strata))
 
+    logger.info("Step 4/6: Loading spaCy model: da_core_news_trf.")
+    model_started_at = perf_counter()
     nlp = spacy.load("da_core_news_trf")
+    logger.info("spaCy model loaded in %.2f seconds.", perf_counter() - model_started_at)
 
     # Analyse every text once.
+    logger.info("Step 5/6: Analysing texts.")
     (
         token_rows,
         total_occurrences,
@@ -407,18 +483,31 @@ def derive_from_spacy_search(
         df_texts,
         conversation_codes,
         nlp,
+        logger=logger,
     )
 
     # Index CSV rows by their original Text_index.
+    logger.info("Indexing %s token rows by Text_index.", len(token_rows))
     token_rows_by_text = defaultdict(list)
 
     for row in token_rows:
         token_rows_by_text[row[0]].append(row)
 
+    logger.info("Token-row indexing completed.")
+
     output_file = Path(output_path)
     output_root = output_file.parent
 
-    for folder, text_indices in strata:
+    logger.info("Step 6/6: Building and saving outputs to: %s", output_root.resolve())
+    for group_number, (folder, text_indices) in enumerate(strata, start=1):
+        group_started_at = perf_counter()
+        logger.info(
+            "Starting output group %s/%s: %s (%s input texts).",
+            group_number,
+            len(strata),
+            folder,
+            len(text_indices),
+        )
         if folder == Path("Total"):
             selected_occurrences = total_occurrences
             selected_token_rows = token_rows
@@ -438,9 +527,12 @@ def derive_from_spacy_search(
 
         stratum_output_dir = output_root / folder
 
-        print(
-            f"Saving {len(text_indices)} texts to: "
-            f"{stratum_output_dir}"
+        logger.info(
+            "Saving group %s/%s: %s conversations with analysed text to %s.",
+            group_number,
+            len(strata),
+            len(selected_occurrences),
+            stratum_output_dir,
         )
 
         _save_stratum(
@@ -449,4 +541,20 @@ def derive_from_spacy_search(
             token_rows=selected_token_rows,
             occurrences_by_conversation=selected_occurrences,
             word_categories=word_categories,
+            logger=logger,
         )
+        logger.info(
+            "Completed output group %s/%s (%.1f%%): %s; %.2f seconds.",
+            group_number,
+            len(strata),
+            100 * group_number / len(strata),
+            folder,
+            perf_counter() - group_started_at,
+        )
+
+    logger.info(
+        "spaCy search completed successfully: %s texts analysed, %s groups saved; %.2f seconds total.",
+        len(occurrences_by_text),
+        len(strata),
+        perf_counter() - started_at,
+    )
