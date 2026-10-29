@@ -1,4 +1,4 @@
-#External
+# External
 import logging
 import random
 from pathlib import Path
@@ -53,14 +53,12 @@ def _create_corpus(dataset_path: str):
     maps
     """
     _, val_dataset, _ = load_tsdae_training_data(
-        dataset_path=dataset_path,
-        preserve_columns=True
+        dataset_path=dataset_path, preserve_columns=True
     )
 
     # Create stable retrieval IDs for this evaluation set
     val_dataset = val_dataset.add_column(
-        "retrieval_id",
-        [f"doc_{i}" for i in range(len(val_dataset))]
+        "retrieval_id", [f"doc_{i}" for i in range(len(val_dataset))]
     )
 
     # Clean documents
@@ -81,12 +79,10 @@ def _create_corpus(dataset_path: str):
     }
 
     # Each noisy query is relevant to its original clean document
-    relevant_docs = {
-        f"q_{rid}": {rid}
-        for rid in val_dataset["retrieval_id"]
-    }
+    relevant_docs = {f"q_{rid}": {rid} for rid in val_dataset["retrieval_id"]}
 
     return val_dataset, corpus, queries, relevant_docs
+
 
 def _create_group_ir_data(dataset, group_column: str):
     corpus = dict(
@@ -97,16 +93,12 @@ def _create_group_ir_data(dataset, group_column: str):
     )
 
     groups = {}
-    
+
     group_values = sorted(
-        value
-        for value in set(dataset[group_column])
-        if value is not None
+        value for value in set(dataset[group_column]) if value is not None
     )
     for group_value in group_values:
-        group_dataset = dataset.filter(
-            lambda x: x[group_column] == group_value
-        )
+        group_dataset = dataset.filter(lambda x: x[group_column] == group_value)
 
         queries = {
             f"q_{rid}": noisy
@@ -116,10 +108,7 @@ def _create_group_ir_data(dataset, group_column: str):
             )
         }
 
-        relevant_docs = {
-            f"q_{rid}": {rid}
-            for rid in group_dataset["retrieval_id"]
-        }
+        relevant_docs = {f"q_{rid}": {rid} for rid in group_dataset["retrieval_id"]}
 
         groups[group_value] = {
             "queries": queries,
@@ -137,7 +126,7 @@ def _InformationRetrievalEvaluator_builder(
     relevant_docs,
     name: str,
     output_path: str,
-    batch_size: int = 32
+    batch_size: int = 32,
 ):
     ir_evaluator = InformationRetrievalEvaluator(
         queries=queries,
@@ -146,7 +135,7 @@ def _InformationRetrievalEvaluator_builder(
         name=name,
         batch_size=batch_size,
         show_progress_bar=True,
-        write_csv=True
+        write_csv=True,
     )
     results = ir_evaluator(model, output_path=output_path)
 
@@ -164,11 +153,10 @@ def _knn_classifier(
     target: str,
     filename: str,
     output_path: str = (
-        "/work/MatiasKokholmAppel#3073/RP_ACT/"
-        "Pipelines/validation/Results/kNN_Results"
+        "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results/kNN_Results"
     ),
     k: int = 5,
-): 
+):
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -180,37 +168,25 @@ def _knn_classifier(
     y_train = train_df[target]
     y_val = val_df[target]
 
-    model = KNeighborsClassifier(
-        n_neighbors=k,
-        metric="cosine",
-        weights="uniform"
-    )
+    model = KNeighborsClassifier(n_neighbors=k, metric="cosine", weights="uniform")
     model.fit(X_train, y_train)
 
     predictions = model.predict(X_val)
 
     report = classification_report(
-        y_val,
-        predictions,
-        zero_division=0,
-        output_dict=True
+        y_val, predictions, zero_division=0, output_dict=True
     )
 
     report_df = pd.DataFrame(report).T
 
-    report_df.to_csv(
-        output_path / f"{filename}_{target}_report.csv"
-    )
+    report_df.to_csv(output_path / f"{filename}_{target}_report.csv")
 
     cm = confusion_matrix(y_test, preds, labels=model.classes_)
 
     cm_df = pd.DataFrame(cm, index=model.classes_, columns=model.classes_)
     print(cm_df)
 
-    disp = ConfusionMatrixDisplay(
-        confusion_matrix=cm,
-        display_labels=model.classes_
-    )
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=model.classes_)
 
     disp.plot()
     plt.title(f"Confusion Matrix - {target}")
@@ -224,19 +200,11 @@ def _knn_classifier(
 
     plt.close()
 
-    
     return model, report_df
 
-def knn_plots(
-    model,
-    report
-):
-    return monke
 
 def _grind_search(
-    train_df: pd.DataFrame,
-    val_df: pd.DataFrame,
-    target: str,
+    train_df: pd.DataFrame, val_df: pd.DataFrame, target: str, filename: str
 ):
     X_train = np.stack(train_df["embedding"].to_numpy())
     X_val = np.stack(val_df["embedding"].to_numpy())
@@ -248,22 +216,18 @@ def _grind_search(
     X = np.vstack([X_train, X_val])
     y = np.concatenate([y_train, y_val])
 
-    # -1 means training, 0 means validation
-    test_fold = np.concatenate([
-        np.full(len(X_train), -1),
-        np.zeros(len(X_val), dtype=int)
-    ])
+    # -1 == training, 0 == validation
+    test_fold = np.concatenate(
+        [np.full(len(X_train), -1), np.zeros(len(X_val), dtype=int)]
+    )
 
     cv = PredefinedSplit(test_fold)
 
-    knn = KNeighborsClassifier(
-        metric="cosine",
-        n_jobs=-1
-    )
+    knn = KNeighborsClassifier(metric="cosine", n_jobs=-1)
 
     param_grid = {
         "n_neighbors": [3, 5, 7, 11, 15, 21, 31],
-        "weights": ["uniform", "distance"]
+        "weights": ["uniform", "distance"],
     }
 
     grid = GridSearchCV(
@@ -273,17 +237,31 @@ def _grind_search(
         cv=cv,
         n_jobs=2,
         verbose=1,
-        refit=False
+        refit=False,
     )
 
     grid.fit(X, y)
 
+    # Saving hyperparameter  search results
+    results_df = pd.DataFrame(grid.cv_results_)
+
+    results_df.to_csv(
+        f"{filename}_knn_gridsearch_{target}.csv",
+        index=False,
+    )
+
     print("Best parameters:", grid.best_params_)
     print("Validation F1:", grid.best_score_)
 
-    return grid
+    best_knn = KNeighborsClassifier(**grid.best_params_, metric="cosine", n_jobs=1)
+
+    best_knn.fit(X_train, y_train)
+
+    return grid, best_knn
+
 
 # Logistic Regression functionality
+
 
 def _load_split_data(split_dir: str | Path):
     """
@@ -296,7 +274,7 @@ def _load_split_data(split_dir: str | Path):
     val_df = pl.read_parquet(split_dir / "val.parquet")
     test_df = pl.read_parquet(split_dir / "test.parquet")
 
-    required_columns = ['embedding', 'age_group', 'gender']
+    required_columns = {"embedding", "age_group", "gender"}
 
     for name, df in [
         ("train", train_df),
@@ -306,21 +284,13 @@ def _load_split_data(split_dir: str | Path):
         missing = required_columns - set(df.columns)
 
         if missing:
-            raise ValueError(
-                f"Missing columns in {name}: {missing}"
-            )
+            raise ValueError(f"Missing columns in {name}: {missing}")
 
     valid_genders = ["female", "male"]
 
-    train_df = train_df.filter(
-        pl.col("gender").is_in(valid_genders)
-    )
-    val_df = val_df.filter(
-        pl.col("gender").is_in(valid_genders)
-    )
-    test_df = test_df.filter(
-        pl.col("gender").is_in(valid_genders)
-    )
+    train_df = train_df.filter(pl.col("gender").is_in(valid_genders))
+    val_df = val_df.filter(pl.col("gender").is_in(valid_genders))
+    test_df = test_df.filter(pl.col("gender").is_in(valid_genders))
 
     return (
         train_df.to_pandas(),
@@ -345,16 +315,12 @@ def _prep_data(df: pd.DataFrame, seed: int):
     """
     print("df rows:", len(df))
 
-    required_columns = [
-        'embedding',
-        'age_group',
-        'gender'
-        ]
-    
+    required_columns = ["embedding", "age_group", "gender"]
+
     missing = set(required_columns) - set(df.columns)
 
     if missing:
-        raise ValueError (f"Missing columns: {missing}")
+        raise ValueError(f"Missing columns: {missing}")
 
     polars_df = pl.from_pandas(df)
 
@@ -375,20 +341,18 @@ def _prep_data(df: pd.DataFrame, seed: int):
 
     return train_df, val_df, test_df
 
+
 def _get_embeddings(df: pd.DataFrame):
     """
     Pulls embeddings from a dataframe and saves it as X for classification
     input: pandas dataframe
     output: embeddings in a stack numpy array.
     """
-    X = np.stack([
-        np.asanyarray(emb, dtype=np.float32)
-        for emb in df['embedding']
-    ])
+    X = np.stack([np.asanyarray(emb, dtype=np.float32) for emb in df["embedding"]])
 
     if not np.isfinite(X).all():
         raise ValueError("Embeddings contain NaN or infinity")
-    
+
     return X
 
 
@@ -397,7 +361,6 @@ def _LR_classifier(
     val_df: pd.DataFrame,
     filename: str,
     target: str,
-    seed: int,
     C: float = 1.0,
     class_weight="balanced",
     output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results/LR_results",
@@ -415,7 +378,7 @@ def _LR_classifier(
     y_test = val_df[target].to_numpy()
 
     # Defining LR
-    clf = LogisticRegression(C=C, max_iter=1000, class_weight=class_weight, random_state=seed)
+    clf = LogisticRegression(C=C, max_iter=1000, class_weight=class_weight)
 
     clf.fit(X_train, y_train)
 
@@ -446,3 +409,61 @@ def _LR_classifier(
     plt.close()
 
     return clf, report
+
+
+def _create_report(
+    gender_report,
+    age_report,
+    filename: str = "lr_results.xlsx",
+    output_path: str = "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results",
+):
+    output_path = Path(output_path)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    gender_df = pd.DataFrame(gender_report).T
+    age_df = pd.DataFrame(age_report).T
+
+    save_path = output_path / filename
+
+    print(f"Saving Excel report to: {save_path}")
+
+    with pd.ExcelWriter(save_path) as writer:
+        gender_df.to_excel(
+            writer,
+            sheet_name="Gender",
+        )
+
+        age_df.to_excel(
+            writer,
+            sheet_name="Age",
+        )
+
+    print(f"Excel exists: {save_path.exists()}")
+
+
+def _calc_sd_mean(results_path: str):
+    results_path = Path(results_path)
+
+    results = []
+
+    for file in results_path.glob("*.xlsx"):
+        report = pd.read_excel(file, index_col=0)
+
+        model = "bge-m3" if "bge" in file.stem.lower() else "tsdae"
+
+        results.append(
+            {
+                "model": model,
+                "file": file.stem,
+                "macro_f1": report.loc["macro avg", "f1-score"],
+                "balanced_accuracy": report.loc["macro avg", "recall"],
+            }
+        )
+
+    results_df = pd.DataFrame(results)
+
+    summary = results_df.groupby("model")[["macro_f1", "balanced_accuracy"]].agg(
+        ["mean", "std"]
+    )
+
+    return summary

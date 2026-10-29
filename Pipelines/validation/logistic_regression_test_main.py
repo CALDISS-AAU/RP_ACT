@@ -98,8 +98,7 @@ def main():
     # Gender probe
     _, gender_report = _LR_classifier(
         train_df=train_df,
-        test_df=val_df,
-        random_state=args.seed,
+        val_df=val_df,
         C=args.C,
         target="gender",
         class_weight=class_weight,
@@ -109,8 +108,7 @@ def main():
     # Age Probe
     _, age_report = _LR_classifier(
         train_df=train_df,
-        test_df=val_df,
-        random_state=args.seed,
+        val_df=val_df,
         C=args.C,
         target="age_group",
         class_weight=class_weight,
