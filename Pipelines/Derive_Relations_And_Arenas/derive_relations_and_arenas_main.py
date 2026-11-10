@@ -10,18 +10,21 @@ To run this script, use the following command from the project root:
 # from collections import Counter
 # import re 
 # import csv
-# from pathlib import Path
+from pathlib import Path
+import json
 # from spacy.lang.da import Danish
 # Internal
 from Shared_Functions.logger_functionality import *
 from .Functions.keyword_search import derive_from_keyword_search
 from .Functions.spaCy_search import derive_from_spacy_search
+from .Functions.compare_relations_and_arenas import generate_comparison_workbooks
 ## _______ ##
 
 
 ## STATIC VARIABLES ##
 # Directories - input
 INPUT_DIR_ALL_CONVOS = "./Data/Clean_Combine/conversation_data_without_advisors.parquet"
+INPUT_DIR_WORD_CATEGORIES = "Pipelines/Derive_Relations_And_Arenas/Functions/word_categories.json"
 
 # Directories - internal output
 # OUTPUT_DIR_AAA = "Pipelines/Derive_Relations_And_Arenas/Data/xxx.zzz"
@@ -31,6 +34,9 @@ OUTPUT_DIR_WORDS_BASE = "./Data/Derive_Relations_And_Arenas"
 OUTPUT_DIR_SPACY_TOKENS = "Pipelines/Derive_Relations_And_Arenas/Data/spacy_tokens.csv"
 
 OUTPUT_DIR_COUNTS = f"{OUTPUT_DIR_WORDS_BASE}/counts.xlsx"
+
+# Directories - logs
+OUTPUT_DIR_LOG = "Pipelines/Derive_Relations_And_Arenas/Logs/derive_relations_and_arenas.log"
 
 # Other
 MAYBE_STOPWORDS = (
@@ -180,8 +186,24 @@ STOPWORDS_EXTENSION = (
     'menstruation','mærkeligt','hvert','årlig','ubehageligt',   
 )
 
+with Path(INPUT_DIR_WORD_CATEGORIES).open("r", encoding="utf-8") as file:
+    WORD_CATEGORIES = json.load(file)
+
 MIN_WORD_COUNT = 1000
 MIN_TEXT_COUNT = 900
+
+SUMMARY_TOP_N = 20
+
+SUMMARY_GROUPS = [
+    ("Total", "Total"),
+    ("gender_female", "Female"),
+    ("gender_male", "Male"),
+    ("gender_other", "Other"),
+    ("age_group_pre_teen", "Pre teen"),
+    ("age_group_early_teen", "Early teen"),
+    ("age_group_teen", "Teen"),
+    # ("gender___missing__", "Missing gender"),
+]
 ## _______________________ ##
 
 
@@ -192,6 +214,15 @@ MIN_TEXT_COUNT = 900
 ## MAIN FUNCTION ##
 def main() -> None:
     """Run the full Derive_Relations_And_Arenas pipeline."""
+    logger = setup_logger(
+        output_dir_log=OUTPUT_DIR_LOG,
+        logger_name="derive_relations_and_arenas",
+        overwrite=True,
+    )
+
+    logger.info("Starting Derive_Relations_And_Arenas pipeline.")
+
+    # KEYWORD MATCHING
     # derive_from_keyword_search(
     #     input_path=INPUT_DIR_ALL_CONVOS,
     #     output_path=OUTPUT_DIR_COUNTS,
@@ -200,10 +231,28 @@ def main() -> None:
     #     min_word_count=MIN_WORD_COUNT,
     #     min_text_count=MIN_TEXT_COUNT
     # )
-    derive_from_spacy_search(
-        input_path=INPUT_DIR_ALL_CONVOS,
-        output_path=OUTPUT_DIR_SPACY_TOKENS
+
+    # DERIVE RELATIONS AND ARENAS USING SPACY
+    # try:
+    #     derive_from_spacy_search(
+    #         input_path=INPUT_DIR_ALL_CONVOS,
+    #         output_path=OUTPUT_DIR_SPACY_TOKENS,
+    #         word_categories=WORD_CATEGORIES,
+    #         logger=logger,
+    #     )
+    # except Exception:
+    #     logger.exception("Pipeline failed.")
+    #     raise
+
+    # COMPARE SPACY RESULTS FOR VARIOUS STRATIFICATIONS
+    generate_comparison_workbooks(
+        input_dir=str(Path(OUTPUT_DIR_SPACY_TOKENS).parent),
+        output_dir=OUTPUT_DIR_WORDS_BASE,
+        logger=logger,
+        top_n=SUMMARY_TOP_N,
+        summary_groups=SUMMARY_GROUPS,
     )
+
 
 ## CALL OF MAIN FUNCTION ##
 if __name__ == "__main__":
