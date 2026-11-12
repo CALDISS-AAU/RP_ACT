@@ -5,4 +5,5 @@ uv run python \
     --split-dir /work/RP_act/ACT/Data/splits/message_data/seed_1849 \
     --seed 1849 \
     --filename knn_message_data_seed_1849 \
-    --grid-search-only
+    --grid-search-only \
+    "/work/MatiasKokholmAppel#3073/RP_ACT/Pipelines/validation/Results/kNN_results"

@@ -13,6 +13,7 @@ datasets=(
 models=(
     '/work/RP_act/ACT/Modelling/ACT-TSDAE-collapsed'
     '/work/RP_act/ACT/Modelling/ACT-TSDAE-collapsed_WoA'
+    /work/RP_act/ACT/Modelling/ACT-TSDAE-conversations
     '/work/RP_act/ACT/Modelling/ACT-TSDAE-conversations_WoA'
     '/work/RP_act/ACT/Modelling/ACT-TSDAE-messages'
     '/work/RP_act/ACT/Modelling/ACT-TSDAE-messages_WoA'
