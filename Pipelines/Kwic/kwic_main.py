@@ -47,6 +47,9 @@ def main() -> None:
         logger_name="kwic.step_1",
     )
 
+    logger_1.info("In the beginning there was darkness.........")
+    print("I have printed stuff!! Yay me!")
+
     generate_kwic_table(
         input_dir_data=INPUT_DIR_CONVERSATION_DATA,
         input_dir_arenas=INPUT_DIR_ARENAS,

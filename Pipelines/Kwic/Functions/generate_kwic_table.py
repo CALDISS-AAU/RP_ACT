@@ -3,12 +3,10 @@
 ## IMPORTS ##
 import csv
 import logging
-from collections.abc import Iterator
 from pathlib import Path
 
 import polars as pl
 import spacy
-from spacy.language import Language
 from spacy.tokens import Doc
 ## _______ ##
 
@@ -59,9 +57,6 @@ def __extract_keyword_context(
     window_size: int,
 ) -> tuple[str, str]:
     """Extract up to n words on each side within the keyword's sentence."""
-    if window_size < 0:
-        raise ValueError("window_size must be zero or greater.")
-
     if window_size == 0:
         return "", ""
 
@@ -113,37 +108,90 @@ def generate_kwic_table(
     top_relevant_relations: int,
     logger: logging.Logger,
 ) -> None:
-    """Generates KWIC table."""
+    """Generate one KWIC table with separate arena and relation categories."""
+    if words_before_and_after_keyword < 0:
+        raise ValueError("words_before_and_after_keyword must be non-negative.")
+
+    logger.info("Beginning KWIC table generation")
 
     arenas = _find_top_n_keywords(
         input_dir=input_dir_arenas,
         top_n=top_relevant_arenas,
-        logger=logger
+        logger=logger,
     )
-
     relations = _find_top_n_keywords(
         input_dir=input_dir_relations,
         top_n=top_relevant_relations,
-        logger=logger
+        logger=logger,
     )
 
-    df = pl.read_parquet(input_dir_data)
-    KWICs = []
+    keywords_by_category = {
+        "arenas": arenas,
+        "relations": relations,
+    }
 
-    for conversation in df["msg_tekst"]:
+    logger.info("Loading da_core_news_trf")
+    nlp = spacy.load("da_core_news_trf")
+
+    logger.info("Reading conversations from %s", input_dir_data)
+    df = pl.read_parquet(input_dir_data, columns=["msg_tekst"])
+    kwic_rows = []
+
+    for conversation_number, conversation in enumerate(
+        df["msg_tekst"], start=1
+    ):
+        if conversation is None or not conversation.strip():
+            continue
+
+        # Process each conversation once, then search both categories.
         doc = nlp(conversation)
-        matches = __find_keyword_matches(doc, keywords)
 
-        for match in matches:
-            before, after = __extract_keyword_context(
-                doc=doc,
-                token_index=match["token_index"],
-                window_size=window_size,
+        for category, keywords in keywords_by_category.items():
+            matches = __find_keyword_matches(doc, keywords)
+
+            for match in matches:
+                before, after = __extract_keyword_context(
+                    doc=doc,
+                    token_index=match["token_index"],
+                    window_size=words_before_and_after_keyword,
+                )
+
+                kwic_rows.append({
+                    "Category": category,
+                    "Keyword": match["keyword"],
+                    "n words before kw": before,
+                    "kw in text": match["word_in_text"],
+                    "n words after kw": after,
+                })
+
+        if conversation_number % 100 == 0:
+            logger.info(
+                "Reached conversation %s/%s; collected %s KWIC rows",
+                conversation_number,
+                df.height,
+                len(kwic_rows),
             )
 
-            KWICs.append({
-                "Keyword": match["keyword"],
-                "n words before kw": before,
-                "kw in text": match["word_in_text"],
-                "n words after kw": after,
-            })
+    # An explicit schema preserves the columns even if no matches are found.
+    kwic_table = pl.DataFrame(
+        kwic_rows,
+        schema={
+            "Category": pl.String,
+            "Keyword": pl.String,
+            "n words before kw": pl.String,
+            "kw in text": pl.String,
+            "n words after kw": pl.String,
+        },
+    )
+
+    output_path = Path(output_dir)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    kwic_table.write_csv(output_path, separator=";")
+
+    logger.info(
+        "Saved %s KWIC rows to %s",
+        kwic_table.height,
+        output_path,
+    )
+
+
