@@ -8,6 +8,7 @@ To run this script, use the following command from the project root:
 # Internal
 from Shared_Functions.logger_functionality import *
 from .Functions.generate_kwic_table import generate_kwic_table
+from .Functions.summarise_kwic_table import summarise_kwic_table
 ## _______ ##
 
 
@@ -21,17 +22,21 @@ INPUT_DIR_RELATIONS = "./Data/Derive_Relations_And_Arenas/relations_comparison.c
 # OUTPUT_DIR_AAA = "Pipelines/Kwic/Data/xxx.zzz"
 
 # Directories - global output
-OUTPUT_DIR_KWIC_TABLE = "./Data/Kwic/kwic_table.csv"
+OUTPUT_DIR_KWIC_TABLE = "Pipelines/Kwic/Data/Kwic/kwic_table.csv"
+OUTPUT_DIR_KWIC_SUMMARY = "Pipelines/Kwic/Data/Kwic/kwic_summary.json"
 
 # Directories - logs
 # OUTPUT_DIR_LOG_FULL_PIPELINE = "./Pipelines/Kwic/Logs/full_pipeline.log"
 OUTPUT_DIR_LOG_1 = "./Pipelines/Kwic/Logs/generate_kwic_table.log"
+OUTPUT_DIR_LOG_2 = "./Pipelines/Kwic/Logs/summarise_kwic_table.log"
 # OUTPUT_DIR_LOG_2 = "./Pipelines/Kwic/Logs/example_2.log"
 
 # Other
 words_before_and_after_keyword = 4
 top_relevant_arenas = 20
 top_relevant_relations = 20
+
+top_relevant_words = 10
 ## _______________________ ##
 
 
@@ -50,15 +55,27 @@ def main() -> None:
     logger_1.info("In the beginning there was darkness.........")
     print("I have printed stuff!! Yay me!")
 
-    generate_kwic_table(
-        input_dir_data=INPUT_DIR_CONVERSATION_DATA,
-        input_dir_arenas=INPUT_DIR_ARENAS,
-        input_dir_relations=INPUT_DIR_RELATIONS,
-        output_dir=OUTPUT_DIR_KWIC_TABLE,
-        words_before_and_after_keyword=words_before_and_after_keyword,
-        top_relevant_arenas=top_relevant_arenas,
-        top_relevant_relations=top_relevant_relations,
-        logger=logger_1
+    # generate_kwic_table(
+    #     input_dir_data=INPUT_DIR_CONVERSATION_DATA,
+    #     input_dir_arenas=INPUT_DIR_ARENAS,
+    #     input_dir_relations=INPUT_DIR_RELATIONS,
+    #     output_dir=OUTPUT_DIR_KWIC_TABLE,
+    #     words_before_and_after_keyword=words_before_and_after_keyword,
+    #     top_relevant_arenas=top_relevant_arenas,
+    #     top_relevant_relations=top_relevant_relations,
+    #     logger=logger_1
+    # )
+
+    logger_2 = setup_logger(
+        output_dir_log=OUTPUT_DIR_LOG_2,
+        logger_name="kwic.step_2",
+    )
+
+    kwic_summary = summarise_kwic_table(
+        input_dir=OUTPUT_DIR_KWIC_TABLE,
+        output_dir=OUTPUT_DIR_KWIC_SUMMARY,
+        top_m=top_relevant_words,
+        logger=logger_2,
     )
 
     # example_function(
