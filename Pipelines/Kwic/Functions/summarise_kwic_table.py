@@ -23,39 +23,27 @@ def __extract_words(text: str | None) -> list[str]:
 def _generate_context_counters(
     kwic_table: pl.DataFrame,
     logger: logging.Logger,
-) -> tuple[
-    dict[str, dict[str, Counter[str]]],
-    dict[str, dict[str, Counter[str]]],
-]:
-    """Count words before and after each keyword within each category."""
-    before_counters: dict[str, dict[str, Counter[str]]] = {}
-    after_counters: dict[str, dict[str, Counter[str]]] = {}
+) -> dict[str, dict[str, Counter[str]]]:
+    """Count sentences containing each relevant word per keyword."""
+    counters: dict[str, dict[str, Counter[str]]] = {}
 
     for row in kwic_table.iter_rows(named=True):
         category = row["Category"]
         keyword = row["Keyword"]
 
-        if category not in before_counters:
-            before_counters[category] = {}
-            after_counters[category] = {}
+        if category not in counters:
+            counters[category] = {}
 
-        if keyword not in before_counters[category]:
-            before_counters[category][keyword] = Counter()
-            after_counters[category][keyword] = Counter()
+        if keyword not in counters[category]:
+            counters[category][keyword] = Counter()
 
-        before_counters[category][keyword].update(
-            __extract_words(row["n words before kw"])
-        )
-        after_counters[category][keyword].update(
-            __extract_words(row["n words after kw"])
-        )
+        relevant_words = set(json.loads(row["relevant_words"]))
 
-    logger.info(
-        "Generated context counters for %s KWIC rows",
-        kwic_table.height,
-    )
+        counters[category][keyword].update(relevant_words)
 
-    return before_counters, after_counters
+    logger.info("Generated counters from %s KWIC rows", kwic_table.height)
+
+    return counters
 
 
 def _summarise_context_counters(

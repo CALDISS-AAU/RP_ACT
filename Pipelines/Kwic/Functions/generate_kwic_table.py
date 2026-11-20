@@ -1,7 +1,7 @@
 """Example helper functions for the pipeline."""
 
 ## IMPORTS ##
-import csv
+import json
 import logging
 from pathlib import Path
 
@@ -31,7 +31,7 @@ def _find_top_n_keywords(
     return keywords
 
 
-def __find_keyword_matches(
+def _find_keyword_matches(
     doc: Doc,
     keywords: list[str],
 ) -> list[dict]:
@@ -51,50 +51,54 @@ def __find_keyword_matches(
     return matches
 
 
-def __extract_keyword_context(
+def _extract_keyword_context(
     doc: Doc,
     token_index: int,
-    window_size: int,
-) -> tuple[str, str]:
-    """Extract up to n words on each side within the keyword's sentence."""
-    if window_size == 0:
-        return "", ""
-
+) -> str:
+    """Extract the full sentence containing the keyword."""
     keyword_token = doc[token_index]
     sentence = keyword_token.sent
 
-    words_before = [
-        token for token in sentence
-        if token.i < token_index
-        and any(character.isalnum() for character in token.text)
-    ]
-    words_after = [
-        token for token in sentence
-        if token.i > token_index
-        and any(character.isalnum() for character in token.text)
-    ]
-
-    # Start at the nth preceding word, or the sentence beginning.
-    if len(words_before) > window_size:
-        context_start = words_before[-window_size].idx
-    else:
-        context_start = sentence.start_char
-
-    # Stop before the next excluded word, or at the sentence end.
-    if len(words_after) > window_size:
-        context_end = words_after[window_size].idx
-    else:
-        context_end = sentence.end_char
-
-    keyword_start = keyword_token.idx
-    keyword_end = keyword_start + len(keyword_token.text)
-
-    before = doc.text[context_start:keyword_start].strip()
-    after = doc.text[keyword_end:context_end].strip()
-
-    return before, after
+    return sentence.text.strip()
 
 
+def _extract_relevant_words(
+    doc: Doc,
+    token_index: int,
+    relevant_pos: set[str],
+    exclude_stopwords: bool,
+    only_alphabetic: bool,
+) -> list[str]:
+    """Extract relevant lemmas, preserving repetitions and word order."""
+    sentence = doc[token_index].sent
+    relevant_words = []
+
+    for token in sentence:
+        # Exclude the particular keyword occurrence.
+        if token.i == token_index:
+            continue
+
+        # Whitespace and punctuation are never context words.
+        if token.is_space or token.is_punct:
+            continue
+
+        if token.pos_ not in relevant_pos:
+            continue
+
+        if exclude_stopwords and token.is_stop:
+            continue
+
+        if only_alphabetic and not token.is_alpha:
+            continue
+
+        lemma = (token.lemma_ or token.text).casefold()
+
+        if lemma:
+            relevant_words.append(lemma)
+
+    return relevant_words
+
+    
 ## ________________ ##
 
 ## MAIN FUNCTIONALITY ##
@@ -103,15 +107,14 @@ def generate_kwic_table(
     input_dir_arenas: str,
     input_dir_relations: str,
     output_dir: str,
-    words_before_and_after_keyword: int,
     top_relevant_arenas: int,
     top_relevant_relations: int,
+    relevant_pos: set[str],
+    exclude_stopwords: bool,
+    only_alphabetic: bool,
     logger: logging.Logger,
 ) -> None:
     """Generate one KWIC table with separate arena and relation categories."""
-    if words_before_and_after_keyword < 0:
-        raise ValueError("words_before_and_after_keyword must be non-negative.")
-
     logger.info("Beginning KWIC table generation")
 
     arenas = _find_top_n_keywords(
@@ -136,6 +139,7 @@ def generate_kwic_table(
     logger.info("Reading conversations from %s", input_dir_data)
     df = pl.read_parquet(input_dir_data, columns=["msg_tekst"])
     kwic_rows = []
+    skipped_spacy_rows = 0
 
     for conversation_number, conversation in enumerate(
         df["msg_tekst"], start=1
@@ -144,24 +148,53 @@ def generate_kwic_table(
             continue
 
         # Process each conversation once, then search both categories.
-        doc = nlp(conversation)
+        try:
+            doc = nlp(conversation)
+        except ValueError as exc:
+            if not str(exc).startswith("Shape mismatch for blis.gemm:"):
+                raise
+
+            skipped_spacy_rows += 1
+            logger.exception(
+                "Skipping row %s/%s in %s after spaCy failure "
+                "(characters=%s, spaCy tokens=%s)",
+                conversation_number,
+                df.height,
+                input_dir_data,
+                len(conversation),
+                len(nlp.make_doc(conversation)),
+            )
+            continue
 
         for category, keywords in keywords_by_category.items():
-            matches = __find_keyword_matches(doc, keywords)
+            matches = _find_keyword_matches(doc, keywords)
 
             for match in matches:
-                before, after = __extract_keyword_context(
+                token_index = match["token_index"]
+                keyword = match["keyword"]
+
+                sentence = _extract_keyword_context(
                     doc=doc,
-                    token_index=match["token_index"],
-                    window_size=words_before_and_after_keyword,
+                    token_index=token_index,
+                )
+
+                relevant_words = _extract_relevant_words(
+                    doc=doc,
+                    token_index=token_index,
+                    relevant_pos=relevant_pos,
+                    exclude_stopwords=exclude_stopwords,
+                    only_alphabetic=only_alphabetic,
                 )
 
                 kwic_rows.append({
                     "Category": category,
-                    "Keyword": match["keyword"],
-                    "n words before kw": before,
+                    "Keyword": keyword,
+                    "sentence": sentence,
                     "kw in text": match["word_in_text"],
-                    "n words after kw": after,
+                    "relevant_words": json.dumps(
+                        relevant_words,
+                        ensure_ascii=False,
+                    ),
                 })
 
         if conversation_number % 100 == 0:
@@ -172,15 +205,21 @@ def generate_kwic_table(
                 len(kwic_rows),
             )
 
+    logger.info(
+        "Skipped %s of %s input rows due to spaCy shape errors",
+        skipped_spacy_rows,
+        df.height,
+    )
+
     # An explicit schema preserves the columns even if no matches are found.
     kwic_table = pl.DataFrame(
         kwic_rows,
         schema={
             "Category": pl.String,
             "Keyword": pl.String,
-            "n words before kw": pl.String,
             "kw in text": pl.String,
-            "n words after kw": pl.String,
+            "sentence": pl.String,
+            "relevant_words": pl.String,
         },
     )
 
