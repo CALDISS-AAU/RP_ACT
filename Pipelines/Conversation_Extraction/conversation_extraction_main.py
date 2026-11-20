@@ -14,6 +14,7 @@ from Shared_Functions.logger_functionality import *
 from .Functions.data_investigation import investigate_data_stats
 from .Functions.get_random_conversations import export_random_conversation_examples
 from .Functions.extract_stratified_conversations import export_stratified_conversations
+from .Functions.get_ids_from_conversations import create_conversation_code_mapping
 ## _______ ##
 
 ## STATIC VARIABLES ##
@@ -187,41 +188,47 @@ def main() -> None:
            conversation examples, extracts stratified conversation
            samples, and rebuilds the combined pipeline log.
     """
-    investigate_data_stats(
-        INPUT_DIR_CONVERSATIONS,
-        OUTPUT_DIR_FINAL_DATA_INVESTIGATION,
-        output_dir_pngs=OUTPUT_DIR_DATA_INVESTIGATION_PNGS,
-        topic_contact_reasons=TOPIC_CONTACT_REASONS,
-        logger=setup_logger(
-            output_dir_log=OUTPUT_DIR_LOG_DATA_INVESTIGATION,
-            logger_name="conversation_extraction.data_inspection",
-        ),
-        bottom_percent=1/6*100,
-        wordcount_interval_size=200,
-        wordcount_stop_at=2000,
-    )
+    # investigate_data_stats(
+    #     INPUT_DIR_CONVERSATIONS,
+    #     OUTPUT_DIR_FINAL_DATA_INVESTIGATION,
+    #     output_dir_pngs=OUTPUT_DIR_DATA_INVESTIGATION_PNGS,
+    #     topic_contact_reasons=TOPIC_CONTACT_REASONS,
+    #     logger=setup_logger(
+    #         output_dir_log=OUTPUT_DIR_LOG_DATA_INVESTIGATION,
+    #         logger_name="conversation_extraction.data_inspection",
+    #     ),
+    #     bottom_percent=1/6*100,
+    #     wordcount_interval_size=200,
+    #     wordcount_stop_at=2000,
+    # )
 
-    export_random_conversation_examples(
-        INPUT_DIR_CONVERSATIONS,
-        OUTPUT_DIR_CONVERSATION_EXAMPLES,
-        5,
-        logger=setup_logger(
-            output_dir_log=OUTPUT_DIR_LOG_CONVERSATION_EXAMPLES,
-            logger_name="conversation_extraction.conversation_examples",
-        ),
-    )
+    # export_random_conversation_examples(
+    #     INPUT_DIR_CONVERSATIONS,
+    #     OUTPUT_DIR_CONVERSATION_EXAMPLES,
+    #     5,
+    #     logger=setup_logger(
+    #         output_dir_log=OUTPUT_DIR_LOG_CONVERSATION_EXAMPLES,
+    #         logger_name="conversation_extraction.conversation_examples",
+    #     ),
+    # )
 
-    export_stratified_conversations(
-        input_dir_data=INPUT_DIR_CONVERSATIONS,
-        output_dir_data_folder=OUTPUT_DIR_STRATIFIED_CONVERSATIONS,
-        logger=setup_logger(
-            output_dir_log=OUTPUT_DIR_LOG_STRATIFIED_CONVERSATIONS,
-            logger_name="conversation_extraction.stratified_conversations",
-        ),
-        topic_contact_reasons=TOPIC_CONTACT_REASONS,
+    # export_stratified_conversations(
+    #     input_dir_data=INPUT_DIR_CONVERSATIONS,
+    #     output_dir_data_folder=OUTPUT_DIR_STRATIFIED_CONVERSATIONS,
+    #     logger=setup_logger(
+    #         output_dir_log=OUTPUT_DIR_LOG_STRATIFIED_CONVERSATIONS,
+    #         logger_name="conversation_extraction.stratified_conversations",
+    #     ),
+    #     topic_contact_reasons=TOPIC_CONTACT_REASONS,
+    #     sample_plan=SAMPLE_PLAN_CONVERSATIONS,
+    #     wordcount_settings=WORDCOUNT_SETTINGS,
+    #     divagation=150,
+    # )
+
+    create_conversation_code_mapping(
         sample_plan=SAMPLE_PLAN_CONVERSATIONS,
-        wordcount_settings=WORDCOUNT_SETTINGS,
-        divagation=150,
+        input_dir='/work/RP_act/ACT/Output/Conversation_Extraction/Stratified_Conversations',
+        output_dir=OUTPUT_DIR_STRATIFIED_CONVERSATIONS
     )
 
     rebuild_pipeline_log(
